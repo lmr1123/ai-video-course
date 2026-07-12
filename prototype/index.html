@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>视频课堂 · 把长视频重构成进阶课程</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f7f2e9;
+  --paper-deep:#efe7d8;
+  --ink:#211d17;
+  --ink-soft:#5c554a;
+  --ink-faint:#8f8778;
+  --vermilion:#bd3a1d;
+  --vermilion-soft:#f3ddd5;
+  --ochre:#a06b12;
+  --ochre-soft:#f0e3c8;
+  --teal:#1f6a5e;
+  --teal-soft:#d9e8e2;
+  --hairline:#d8cdb9;
+  --card:#fdfaf4;
+  --serif:'Noto Serif SC',serif;
+  --sans:'Noto Sans SC',sans-serif;
+  --mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--sans);color:var(--ink);background:var(--paper);
+  line-height:1.85;font-size:15px;
+  background-image:
+    radial-gradient(ellipse 900px 400px at 85% -60px, rgba(189,58,29,.055), transparent),
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(33,29,23,.012) 3px, rgba(33,29,23,.012) 4px);
+}
+::selection{background:var(--vermilion);color:#fff}
+
+/* ── header ─────────────────────── */
+header{
+  border-bottom:2px solid var(--ink);
+  background:var(--paper);
+  position:sticky;top:0;z-index:50;
+}
+.hd-inner{
+  max-width:1280px;margin:0 auto;padding:14px 28px;
+  display:flex;align-items:center;gap:28px;flex-wrap:wrap;
+}
+.brand{display:flex;align-items:baseline;gap:12px;white-space:nowrap}
+.brand h1{font-family:var(--serif);font-weight:900;font-size:22px;letter-spacing:.08em}
+.brand h1 em{font-style:normal;color:var(--vermilion)}
+.brand .en{font-family:var(--mono);font-size:10.5px;color:var(--ink-faint);letter-spacing:.14em;text-transform:uppercase}
+.linkbar{flex:1;display:flex;gap:0;min-width:320px;max-width:640px}
+.linkbar input{
+  flex:1;border:1.5px solid var(--ink);border-right:none;background:var(--card);
+  padding:9px 14px;font-family:var(--mono);font-size:12.5px;color:var(--ink);outline:none;
+}
+.linkbar input::placeholder{color:var(--ink-faint)}
+.linkbar input:focus{background:#fff}
+.linkbar button{
+  border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);
+  font-family:var(--sans);font-weight:700;font-size:13.5px;letter-spacing:.2em;
+  padding:9px 22px;cursor:pointer;transition:background .15s;white-space:nowrap;
+}
+.linkbar button:hover{background:var(--vermilion);border-color:var(--vermilion)}
+.hd-note{font-size:11.5px;color:var(--ink-faint)}
+.hd-mode{font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:none;border:1.5px solid var(--ink);padding:4px 14px;background:var(--card);white-space:nowrap}
+.hd-mode:hover{background:var(--vermilion);border-color:var(--vermilion);color:#fff}
+
+/* ── empty / not-found state ────── */
+.state{max-width:680px;margin:80px auto;text-align:center;padding:0 24px}
+.state .glyph{font-family:var(--serif);font-size:64px;font-weight:900;color:var(--vermilion);line-height:1}
+.state h2{font-family:var(--serif);font-size:24px;margin:18px 0 10px}
+.state p{color:var(--ink-soft);font-size:14px}
+.state code{font-family:var(--mono);font-size:12px;background:var(--paper-deep);padding:2px 8px}
+.state .demo-link{
+  display:inline-block;margin-top:22px;border:1.5px solid var(--ink);padding:8px 20px;
+  font-weight:700;font-size:13px;color:var(--ink);text-decoration:none;cursor:pointer;background:var(--card);
+}
+.state .demo-link:hover{background:var(--ink);color:var(--paper)}
+
+/* ── layout ─────────────────────── */
+.wrap{max-width:1280px;margin:0 auto;padding:30px 28px 120px;display:none}
+.wrap.active{display:grid}
+.wrap{grid-template-columns:460px 1fr;gap:44px;align-items:start}
+.left{position:sticky;top:78px}
+
+/* player */
+.player-frame{border:2px solid var(--ink);background:#000;box-shadow:8px 8px 0 var(--paper-deep)}
+.player-frame .ratio{position:relative;padding-top:56.25%}
+.player-frame iframe,#yt-player{position:absolute;inset:0;width:100%;height:100%;border:0}
+.now-playing{
+  display:flex;justify-content:space-between;align-items:baseline;gap:12px;
+  font-size:12px;color:var(--ink-soft);margin:12px 2px 0;
+}
+.now-playing .t{font-family:var(--mono);color:var(--vermilion);font-weight:500}
+
+/* knowledge map nav */
+.map-nav{margin-top:26px}
+.map-nav h3{
+  font-family:var(--serif);font-size:15px;font-weight:700;letter-spacing:.12em;
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;
+}
+.map-nav h3::after{content:"";flex:1;height:1px;background:var(--ink)}
+.map-list{list-style:none;max-height:calc(100vh - 480px);overflow-y:auto;scrollbar-width:thin}
+.map-list li{
+  display:grid;grid-template-columns:52px 1fr auto;gap:10px;align-items:baseline;
+  padding:7px 8px;border-bottom:1px solid var(--hairline);cursor:pointer;transition:background .12s;
+}
+.map-list li:hover{background:var(--card)}
+.map-list li.skip{opacity:.42}
+.map-list li.skip .mt{text-decoration:line-through}
+.map-list li.playing{background:var(--card)}
+.map-list li.playing .ts{color:var(--vermilion);font-weight:700}
+.map-list li.playing .mt{font-weight:700}
+.map-list .ts{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+.map-list .mt{font-size:13px;line-height:1.5}
+.badge{
+  font-size:10.5px;font-weight:700;letter-spacing:.08em;padding:1px 8px;white-space:nowrap;
+  border:1px solid currentColor;
+}
+.b-deep{color:var(--vermilion);background:var(--vermilion-soft)}
+.b-quick{color:var(--ochre);background:var(--ochre-soft)}
+.b-raw{color:var(--teal);background:var(--teal-soft)}
+.b-sum{color:var(--ink-soft);background:var(--paper-deep)}
+.b-skip{color:var(--ink-faint);background:transparent}
+
+/* ── right column ───────────────── */
+.right{min-width:0}
+.kicker{
+  font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--vermilion);margin-bottom:10px;
+}
+.course-title{
+  font-family:var(--serif);font-weight:900;font-size:clamp(24px,2.6vw,34px);
+  line-height:1.35;letter-spacing:.01em;margin-bottom:8px;
+}
+.course-meta{font-size:12.5px;color:var(--ink-soft);display:flex;gap:18px;flex-wrap:wrap;margin-bottom:34px}
+.course-meta b{color:var(--ink)}
+
+section{margin-bottom:52px}
+.sec-head{display:flex;align-items:baseline;gap:14px;margin-bottom:20px}
+.sec-head .no{
+  font-family:var(--serif);font-weight:900;font-size:30px;color:var(--vermilion);line-height:1;
+}
+.sec-head h2{font-family:var(--serif);font-weight:700;font-size:20px;letter-spacing:.05em}
+.sec-head .rule{flex:1;height:2px;background:var(--ink);align-self:center}
+
+/* 决策卡 */
+.deck{
+  border:2px solid var(--ink);background:var(--card);padding:26px 30px;
+  box-shadow:8px 8px 0 var(--paper-deep);
+}
+.deck .theme{font-family:var(--serif);font-size:16.5px;font-weight:700;line-height:1.8;margin-bottom:18px}
+.deck .theme::before{content:"主题 ";font-size:11px;letter-spacing:.2em;color:var(--vermilion);font-family:var(--sans);display:block;margin-bottom:4px}
+.claims{list-style:none;counter-reset:c;margin-bottom:6px}
+.claims li{
+  counter-increment:c;position:relative;padding:10px 0 10px 40px;
+  border-top:1px solid var(--hairline);font-size:14px;
+}
+.claims li::before{
+  content:counter(c,cjk-ideographic);position:absolute;left:2px;top:12px;
+  font-family:var(--serif);font-weight:900;color:var(--vermilion);font-size:15px;
+}
+.deck-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--hairline);border-top:1px solid var(--hairline);margin-top:16px}
+.deck-cell{background:var(--card);padding:14px 16px 14px 0}
+.deck-cell h4{font-size:11.5px;letter-spacing:.18em;color:var(--ink-faint);font-weight:700;margin-bottom:6px}
+.deck-cell p{font-size:13px;color:var(--ink-soft);line-height:1.75}
+
+/* timestamps */
+.ts-chip{
+  font-family:var(--mono);font-size:11px;font-weight:500;color:var(--vermilion);
+  background:var(--vermilion-soft);border:1px solid rgba(189,58,29,.35);
+  padding:1px 7px;cursor:pointer;white-space:nowrap;transition:all .12s;
+  border-radius:2px;user-select:none;
+}
+.ts-chip:hover{background:var(--vermilion);color:#fff}
+.ts-chip::before{content:"▶ ";font-size:8px;vertical-align:1px}
+
+/* attribution badges */
+.attr{
+  font-size:10.5px;font-weight:700;padding:1px 7px;margin-right:6px;letter-spacing:.05em;
+  vertical-align:1.5px;border-radius:2px;
+}
+.a-quote{background:var(--ink);color:var(--paper)}
+.a-summ{background:var(--teal-soft);color:var(--teal);border:1px solid var(--teal)}
+.a-expl{background:var(--ochre-soft);color:var(--ochre);border:1px solid var(--ochre)}
+.a-ext{background:transparent;color:var(--ink-soft);border:1px dashed var(--ink-soft)}
+
+/* map table */
+.map-table{width:100%;border-collapse:collapse;font-size:13px}
+.map-table th{
+  text-align:left;font-size:11px;letter-spacing:.15em;color:var(--ink-faint);
+  border-bottom:2px solid var(--ink);padding:6px 10px 8px;font-weight:700;white-space:nowrap;
+}
+.map-table td{border-bottom:1px solid var(--hairline);padding:10px;vertical-align:top}
+.map-table tr.skip td{opacity:.42}
+.map-table tr:hover td{background:var(--card)}
+.map-table .why{color:var(--ink-soft);font-size:12.5px}
+.map-stats{margin-top:14px;font-size:12.5px;color:var(--ink-soft)}
+.map-stats b{color:var(--vermilion)}
+
+/* module */
+.module{border-left:3px solid var(--vermilion);padding-left:26px;margin-bottom:56px}
+.module:last-child{margin-bottom:0}
+.module-head h3{font-family:var(--serif);font-size:19px;font-weight:900;line-height:1.5}
+.module-head .sub{font-size:12.5px;color:var(--ink-soft);margin:6px 0 4px;display:flex;gap:16px;flex-wrap:wrap}
+.depth-tabs{display:flex;gap:0;margin:18px 0 26px;border:1.5px solid var(--ink);width:fit-content}
+.depth-tabs button{
+  border:none;background:var(--card);padding:7px 20px;font-family:var(--sans);
+  font-size:12.5px;font-weight:700;cursor:pointer;color:var(--ink-soft);
+  border-right:1.5px solid var(--ink);transition:all .12s;
+}
+.depth-tabs button:last-child{border-right:none}
+.depth-tabs button.on{background:var(--ink);color:var(--paper)}
+.qa{margin-bottom:24px}
+.qa h4{
+  font-family:var(--serif);font-size:15px;font-weight:700;margin-bottom:8px;
+  display:flex;align-items:baseline;gap:10px;
+}
+.qa h4 .qno{font-family:var(--mono);font-size:11px;color:var(--vermilion);font-weight:500}
+.qa p{font-size:14px;margin-bottom:8px}
+.qa .pull{
+  font-family:var(--serif);font-size:15px;line-height:2;background:var(--card);
+  border:1px solid var(--hairline);border-left:3px solid var(--ink);
+  padding:14px 18px;margin:10px 0;
+}
+.brief{
+  background:var(--ink);color:var(--paper);padding:20px 24px;font-size:14px;line-height:2;
+}
+.brief .lb{font-size:11px;letter-spacing:.2em;color:var(--vermilion-soft);display:block;margin-bottom:6px}
+
+footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;font-size:11.5px;color:var(--ink-faint)}
+
+/* entering animation */
+.wrap.active .left{animation:rise .5s ease both}
+.wrap.active .right{animation:rise .5s .08s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+@media(max-width:1020px){
+  .wrap{grid-template-columns:1fr}
+  .left{position:static}
+  .map-list{max-height:none}
+  .deck-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd-inner">
+    <div class="brand">
+      <h1>视频<em>课堂</em></h1>
+      <span class="en">Video → Course</span>
+    </div>
+    <div class="linkbar">
+      <input id="url-input" type="text" placeholder="粘贴 YouTube 链接，例如 https://youtu.be/P3KDebPTUrw" spellcheck="false">
+      <button id="go-btn">生成课程</button>
+    </div>
+    <a class="hd-mode" href="relecture/">🎧 重讲课</a>
+    <span class="hd-note">原型 · 仅含 1 条已生成课程</span>
+  </div>
+</header>
+
+<!-- 初始态 -->
+<div class="state" id="state-empty">
+  <div class="glyph">讲</div>
+  <h2>把长视频重构成进阶课程</h2>
+  <p>粘贴一条 YouTube 链接。课程包含导读决策卡、知识地图和深讲模块，<br>所有结论都能点击时间戳回到原视频核对。</p>
+  <a class="demo-link" id="demo-btn">▶ 打开样例课程 · Lenny's Podcast × OpenAI Codex</a>
+</div>
+
+<!-- 未命中态 -->
+<div class="state" id="state-miss" style="display:none">
+  <div class="glyph">待</div>
+  <h2>这条视频还没有生成课程</h2>
+  <p>原型阶段只预置了一条手工制作的样例课程。<br>试试 <code>https://youtu.be/P3KDebPTUrw</code></p>
+  <a class="demo-link" id="demo-btn2">▶ 打开样例课程</a>
+</div>
+
+<!-- 课程视图 -->
+<div class="wrap" id="course">
+  <div class="left">
+    <div class="player-frame"><div class="ratio"><div id="yt-player"></div></div></div>
+    <div class="now-playing">
+      <span>点击任意时间戳，视频跳转到对应位置</span>
+      <span class="t" id="now-t">00:00:00</span>
+    </div>
+    <nav class="map-nav">
+      <h3>知识地图 · 跳转导航</h3>
+      <ul class="map-list" id="map-list"></ul>
+    </nav>
+  </div>
+
+  <div class="right">
+    <div class="kicker">访谈 / 观点模板 · 生成于 2026-07-11 · 字幕：YouTube 自动字幕（时间戳 ±30s）</div>
+    <div class="course-title">当"实现"变得廉价，产品工作会倒转成什么样</div>
+    <div class="course-meta">
+      <span>原视频 <b>Lenny's Podcast × Andrew Ambrosino（OpenAI Codex 负责人）</b></span>
+      <span>原片 <b>70 分钟</b></span>
+      <span>课程预计 <b>30–35 分钟</b></span>
+    </div>
+
+    <!-- 一、导读 -->
+    <section id="sec-deck">
+      <div class="sec-head"><span class="no">一</span><h2>课程导读 · 决策卡</h2><span class="rule"></span></div>
+      <div class="deck">
+        <p class="theme">当 AI 让"实现"变得廉价，产品工作的流程、角色和规划方式会倒转成什么样——来自最激进使用 AI 的团队（OpenAI Codex）的一手观察。</p>
+        <ul class="claims">
+          <li>产品流程倒转了：贵的不再是实现，而是从 90 个原型里做策展和判断。<span class="ts-chip" data-t="178">00:02:58</span></li>
+          <li>"PRD 已死"是错的：为目的选对媒介（文档还是原型）反而更重要。<span class="ts-chip" data-t="438">00:07:18</span></li>
+          <li>角色没有消失而是"塌缩"：你的角色是你工作内容的平均位置；但取消角色会消灭专业最佳实践。<span class="ts-chip" data-t="1365">00:22:45</span></li>
+          <li>产品成败越来越取决于模型时机：同一个 Codex app，11 月发布必败，2 月发布成功。<span class="ts-chip" data-t="2011">00:33:31</span></li>
+          <li>AI 短期做不好设计：难打分、不在研究加速飞轮里、且需要新颖性而非复用已知模式。<span class="ts-chip" data-t="759">00:12:39</span></li>
+        </ul>
+        <div class="deck-grid">
+          <div class="deck-cell"><h4>适合谁</h4><p>用 AI 构建产品的开发者、独立开发者、产品人。不适合想要具体工具教程的人——通篇没有操作演示。</p></div>
+          <div class="deck-cell"><h4>前置知识</h4><p>知道 Codex / Claude Code 这类 coding agent 是什么，用过 vibe coding。不需要 OpenAI 内部背景。</p></div>
+          <div class="deck-cell"><h4>最值得看</h4><p>流程倒转 <span class="ts-chip" data-t="178">00:02:58</span>　模型时机 <span class="ts-chip" data-t="1917">00:31:57</span>　为何合并 <span class="ts-chip" data-t="3166">00:52:46</span></p></div>
+          <div class="deck-cell"><h4>可跳过</h4><p>两段广告、开场混剪、结尾 lightning round 闲聊——合计约 8 分钟，知识地图中已标灰。</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 二、知识地图 -->
+    <section id="sec-map">
+      <div class="sec-head"><span class="no">二</span><h2>知识地图</h2><span class="rule"></span></div>
+      <table class="map-table">
+        <thead><tr><th>主题</th><th>时间</th><th>动作</th><th>编排理由</th></tr></thead>
+        <tbody id="map-table-body"></tbody>
+      </table>
+      <p class="map-stats">深讲 <b>4</b> · 快讲 6 · 原片 2 · 摘要 1 · 跳过 2　→　62 分钟有效内容，按语义切分，不按章节机械切片。</p>
+    </section>
+
+    <!-- 三、深讲模块 × 4 -->
+    <section id="sec-module">
+      <div class="sec-head"><span class="no">三</span><h2>深讲模块（4 个）</h2><span class="rule"></span></div>
+
+      <!-- 模块 1 -->
+      <div class="module" id="mod-1">
+        <div class="module-head">
+          <h3>模块一 · 实现廉价之后，贵的是策展</h3>
+          <div class="sub">
+            <span>时间范围 <span class="ts-chip" data-t="178">00:02:58</span> – 00:10:09</span>
+            <span>核心观点＋工作方法</span><span>讲解约 5 分钟</span>
+          </div>
+        </div>
+        <div class="depth-tabs">
+          <button data-d="d30">30 秒理解</button>
+          <button data-d="dn" class="on">通俗讲解</button>
+          <button data-d="dd">技术深入</button>
+        </div>
+        <div data-pane="d30" style="display:none">
+          <div class="brief"><span class="lb">30 秒版本</span>实现廉价后流程倒转——先做出来再策展，稀缺的是判断力；但精致原型不再代表接近完成，为目的选对媒介（文档还是原型）比以往更重要。</div>
+        </div>
+        <div data-pane="dn">
+          <div class="qa"><h4><span class="qno">Q1</span>这部分解决什么问题</h4>
+            <p>传统产品流程（研究 → 文档 → 设计 → 原型 → 实现）的排序逻辑建立在一个假设上：实现是最贵的环节，所以要在实现前用便宜的东西降险。当 AI 让实现变得廉价，这条流程还成立吗？"PRD 已死、原型当道"的流行说法对吗？</p></div>
+          <div class="qa"><h4><span class="qno">Q2</span>作者的核心判断</h4>
+            <div class="pull"><span class="attr a-quote">原话</span>"It's backwards. The implementation is actually not the expensive part anymore. It's, dare I say, taste." <span class="ts-chip" data-t="303">00:05:03</span></div>
+            <p><span class="attr a-summ">归纳</span>流程倒转了，但不是"文档死了"：实现廉价意味着任何人都能先做出来再讨论——OpenAI 内部同一个需求可能有 90 个未协调的原型 <span class="ts-chip" data-t="232">00:03:52</span>。稀缺资源从"实现能力"变成"策展能力"。同时他明确反对"PRD 已死" <span class="ts-chip" data-t="438">00:07:18</span>：澄清模糊领域用文档，压测交互模式才用原型。</p></div>
+          <div class="qa"><h4><span class="qno">Q3</span>用人话怎么理解</h4>
+            <p>以前盖房子贵，先画图纸做沙盘，图纸阶段吵完架才动工。现在"盖房子"一夜之间免费，人人直接盖 90 栋毛坯房——问题变成谁来决定哪栋值得精装、哪些该拆掉合并。而且以前看到一栋装修完的房子，就知道它走完了全部审批；现在一栋能拎包入住的房子，可能只是某人昨晚的即兴试验。<b>外观不再携带"进度信息"。</b></p></div>
+          <div class="qa"><h4><span class="qno">Q4</span>背后的机制</h4>
+            <p><span class="attr a-summ">归纳</span>旧流程里媒介和阶段是绑定的：看到接近生产环境的东西，意味着假设已验证、设计已过审——因为不降险就拿不到实现资源。实现廉价后这个绑定断裂（divorced），精致度不再是进度信号 <span class="ts-chip" data-t="544">00:09:04</span>。团队必须显式声明"我们处在流程哪一步"，否则出现两类错觉：把探索原型当成待发布产品，或过早锚定在第一个成型方案上。</p>
+            <p><span class="attr a-expl">解释</span>主持人的"primal mark"（画布第一笔决定后续所有响应）概括了第二类风险 <span class="ts-chip" data-t="495">00:08:15</span>：原型是很强的第一笔，它把讨论从"该解决什么"拉到"按钮放哪"。<b>媒介选择本质是选择你想让团队对什么做出反应。</b></p></div>
+          <div class="qa"><h4><span class="qno">Q5</span>原视频案例与补充案例</h4>
+            <p><span class="attr a-quote">原话大意</span>一个急需的功能，"我确信此刻有 90 个不同的、未协调的团队在各自实现和尝试" <span class="ts-chip" data-t="232">00:03:52</span>。另一面：工程师们也在写"大量不值得读的文档" <span class="ts-chip" data-t="464">00:07:44</span>——两种媒介都在被滥用，问题是媒介与目的错配。</p>
+            <p><span class="attr a-ext">外部</span>反例：独立开发者让 AI 生成带完整 UI 的记账 App 原型发给候选用户，反馈全部集中在配色和按钮位置，没人回答"你会不会用它替代现有工具"——精致度把反馈锚定在错误层面。此案例证明"媒介决定反馈层次"，不证明原型无用。</p></div>
+          <div class="qa"><h4><span class="qno">Q6</span>对 vibe coding 开发者的价值＋最小实践</h4>
+            <p>你已经活在"实现廉价"的世界里。最容易犯的错不再是"做不出来"，而是第一版太快变成默认方案。两条纪律：给每个产出物显式标注阶段（探索 / 验证 / 待发布）；打开编辑器前先问"这一步要的反馈是方向还是交互"——前者写半页文档，后者才出原型。</p>
+            <div class="pull">最小实践（15–30 分钟）：翻出最近一个用 AI 快速做出的功能，写三行——它要验证的问题是什么；直接上原型让你提前锚定了哪个决定；重来的话哪一步该先写半页文档。再给当前项目挑一个模糊需求，先写半页"这是什么、为谁、不做什么"再让 AI 实现，对比返工量。</div></div>
+        </div>
+        <div data-pane="dd" style="display:none">
+          <div class="qa"><h4><span class="qno">＋</span>技术深入 · 追问方向</h4>
+            <p>策展如何规模化——90 个原型谁来看？作者的答案是 zone defense 式的产品覆盖：产品人像联防一样拉开距离占满地图，而不是扎堆 <span class="ts-chip" data-t="1694">00:28:14</span>。</p>
+            <p>阶段信息如何重新编码进工具——作者团队用 baby codebase（大幅简化但保留全部交互形态的代码库）承载探索，与生产库物理隔离，天然携带"这是探索"的信号 <span class="ts-chip" data-t="1212">00:20:12</span>。</p></div>
+        </div>
+      </div>
+
+      <!-- 模块 2 -->
+      <div class="module" id="mod-3">
+        <div class="module-head">
+          <h3>模块二 · AI 为什么做不好设计</h3>
+          <div class="sub">
+            <span>时间范围 <span class="ts-chip" data-t="759">00:12:39</span> – 00:17:17</span>
+            <span>技术机制＋能力边界</span><span>讲解约 5 分钟</span>
+          </div>
+        </div>
+        <div class="depth-tabs">
+          <button data-d="d30">30 秒理解</button>
+          <button data-d="dn" class="on">通俗讲解</button>
+          <button data-d="dd">技术深入</button>
+        </div>
+        <div data-pane="d30" style="display:none">
+          <div class="brief"><span class="lb">30 秒版本</span>AI 做不好设计有两类原因：打分难、不在研究加速飞轮里——这两条会随时间消失；需要新颖性、设计与代码共享深层抽象——这两条更难啃。短期内，方向判断和品味反馈仍然是人的活。</div>
+        </div>
+        <div data-pane="dn">
+          <div class="qa"><h4><span class="qno">Q1</span>这部分解决什么问题</h4>
+            <p>前沿模型写代码已经很强，为什么生成的界面总是"一眼 AI"？这是暂时的还是结构性的？判断这一点决定你该等模型，还是该自己补设计判断。</p></div>
+          <div class="qa"><h4><span class="qno">Q2</span>作者的核心判断</h4>
+            <div class="pull"><span class="attr a-quote">原话</span>"Design's a little bit harder to grade… because the human aspect of taste is part of the feedback mechanism you need." <span class="ts-chip" data-t="759">00:12:39</span></div>
+            <p><span class="attr a-summ">归纳</span>四层原因分两类。实践性的（会消失）：① 设计难以自动打分，人类品味是反馈回路的一环；② 实验室优先投资能加速 AI 研究的能力——正确的代码在飞轮里，设计不在 <span class="ts-chip" data-t="819">00:13:39</span>。结构性的（更难）：③ 设计要求新颖性，工程恰恰要复用已知模式；④ 设计与代码共享一个深层抽象层 <span class="ts-chip" data-t="877">00:14:37</span>。</p></div>
+          <div class="qa"><h4><span class="qno">Q3</span>用人话怎么理解</h4>
+            <p>训练模型像教学生，前提是有人批卷子。代码的卷子机器能批——编译通过没有、测试跑绿没有；设计的卷子只有人类品味能批，批得又慢又贵。更麻烦的是，设计"抄满分作文"不得分：一个每次都输出 linear 官网的模型不是好设计师；而写代码恰恰鼓励抄已知模式。<b>同一套训练配方，在这两个学科上方向相反。</b></p></div>
+          <div class="qa"><h4><span class="qno">Q4</span>背后的机制</h4>
+            <p><span class="attr a-summ">归纳</span>最深的一层是设计-代码抽象层：好的界面设计不只是像素，而是"页面这个角落的东西应该和那个角落的东西共享代码里的某些语义"。作者的试金石是 rebrand：浅层理解是把 263 个组件逐个改一遍；深层理解是改动"两个看起来不同、但承载同一交互语义的东西"之间的语义关系——这仍然超出当前技术 <span class="ts-chip" data-t="915">00:15:15</span>。</p>
+            <p><span class="attr a-expl">解释</span>这就是前端工程里 design token 和语义化组件系统要解决的问题：把"看起来如何"与"意味着什么"分离。模型能生成前者，还不能稳定维护后者——因为后者是跨文件、跨表象的语义映射，不在单次生成的视野里。</p></div>
+          <div class="qa"><h4><span class="qno">Q5</span>原视频案例与补充案例</h4>
+            <p><span class="attr a-quote">原话大意</span>"去年出的每个新网站都是 linear 官网的复制品。如果模型每次都输出 linear 的网站，那不叫解决了设计" <span class="ts-chip" data-t="819">00:13:39</span>；rebrand 的浅层/深层之别 <span class="ts-chip" data-t="915">00:15:15</span>。</p>
+            <p><span class="attr a-ext">外部</span>同一个界面 prompt 连发十次，得到十个几乎相同的"默认风格"页面——这不是 bug，是训练分布的众数：像素级正确，分布级平庸。它证明的正是"新颖性缺失"机制，也解释了为什么设计类技能包（反 AI 默认风格清单）会有效：它们人为提供了模型缺失的品味反馈。</p></div>
+          <div class="qa"><h4><span class="qno">Q6</span>对 vibe coding 开发者的价值＋最小实践</h4>
+            <p>别指望模型独立给出品牌级设计——瓶颈在反馈回路，不在生成能力。要么给它明确的品味约束（色彩策略、参考、禁令清单、design tokens），要么人来做方向判断、让 AI 做实现。"AI 设计不行"多数时候其实是"你没提供反馈"。</p>
+            <div class="pull">最小实践（15–30 分钟）：挑一个你项目里的页面，先让 AI 盲改一版；再给它三条明确约束（一个色彩策略、一个参考对象、一份禁令清单）改一版。对比两版差距——你会直观看到瓶颈在反馈供给，而不是模型能力。</div></div>
+        </div>
+        <div data-pane="dd" style="display:none">
+          <div class="qa"><h4><span class="qno">＋</span>技术深入 · 追问方向</h4>
+            <p>设计评估如何自动化——成对比较的人类偏好数据能否像 RLHF 一样规模化？作者暗示这比"代码能否编译"繁琐得多，但并非不可能，所以前两条原因"会消失" <span class="ts-chip" data-t="759">00:12:39</span>。</p>
+            <p>抽象层问题的工程化表述：模型需要学会的是从视觉表象到语义 token 的稳定映射，且在整个代码库范围内保持一致——这更接近"维护"能力而非"生成"能力，与"模型不会删代码"是同一类短板 <span class="ts-chip" data-t="2440">00:40:40</span>。</p></div>
+        </div>
+      </div>
+
+      <!-- 模块 3 -->
+      <div class="module" id="mod-5">
+        <div class="module-head">
+          <h3>模块三 · 角色塌缩与"平均位置"论</h3>
+          <div class="sub">
+            <span>时间范围 <span class="ts-chip" data-t="1297">00:21:37</span> – 00:27:18</span>
+            <span>核心观点＋职业判断</span><span>讲解约 5 分钟</span>
+          </div>
+        </div>
+        <div class="depth-tabs">
+          <button data-d="d30">30 秒理解</button>
+          <button data-d="dn" class="on">通俗讲解</button>
+          <button data-d="dd">技术深入</button>
+        </div>
+        <div data-pane="d30" style="display:none">
+          <div class="brief"><span class="lb">30 秒版本</span>角色塌缩塌掉的是围栏，不是专业：你的角色是你全部工作内容的平均位置。但取消角色概念是坏主意——它会连学科积累的最佳实践一起扔掉。"会用 Excel 不等于能进财务团队。"</div>
+        </div>
+        <div data-pane="dn">
+          <div class="qa"><h4><span class="qno">Q1</span>这部分解决什么问题</h4>
+            <p>AI 让人人都能写代码、做设计、写文档之后，"角色"还存在吗？一些公司宣布取消产品经理、人人都是 builder——该跟吗？对个人：该继续深耕一个职能，还是变成全栈生物？</p></div>
+          <div class="qa"><h4><span class="qno">Q2</span>作者的核心判断</h4>
+            <div class="pull"><span class="attr a-quote">原话</span>"Everybody's defined less by the fence… where design stops and engineering starts, but more the average of where they're working." <span class="ts-chip" data-t="1316">00:21:56</span></div>
+            <p><span class="attr a-summ">归纳</span>塌缩是真实的（Codex 组比公司其他部门塌得更厉害：设计师会讲工程语言，产品经理有 CS 硕士学位），但作者同时给出全片最直接的反对意见：很多公司"取消产品角色、人人都是 builder"——"顺便说一句，这是个糟糕透顶的主意（a terrible idea）" <span class="ts-chip" data-t="1471">00:24:31</span>。</p></div>
+          <div class="qa"><h4><span class="qno">Q3</span>用人话怎么理解</h4>
+            <p>以前角色是格子间：设计到这堵墙为止，工程从那堵墙开始。现在是散点图：每个人的工作散落在各个学科，你的角色是那团点的<b>质心</b>。质心仍然存在——设计师也写代码，但均值落在设计。墙塌了，重心没塌。</p></div>
+          <div class="qa"><h4><span class="qno">Q4</span>背后的机制</h4>
+            <p><span class="attr a-summ">归纳</span>为什么围栏消失而专业还在：① 每个学科都有可传承的最佳实践和踩坑史，写几行代码不等于自动获得产品学科几十年的积累——抛弃角色的公司实际抛弃的是这些 <span class="ts-chip" data-t="1471">00:24:31</span>；② 没有人能同时做所有事，广度和深度都不够——这也是管理者不会消失的原因 <span class="ts-chip" data-t="1517">00:25:17</span>；③ 真正被侵蚀的是"工具把持角色"：效率不再绑定在精通某个具体工具上，换角色、学习新学科最佳实践的成本骤降 <span class="ts-chip" data-t="1596">00:26:36</span>。</p>
+            <p><span class="attr a-expl">解释</span>作者自己就是论据：他曾长期觉得自己"不配当软件工程师"，因为不关心汇编和 TypeScript 语法记忆——那是工具守门（gatekeeping），不是学科本身。AI 消解的正是这层守门，而不是学科判断力。</p></div>
+          <div class="qa"><h4><span class="qno">Q5</span>原视频案例与补充案例</h4>
+            <p><span class="attr a-quote">原话</span>"Yes, you can use Excel, but you cannot work on the finance team." <span class="ts-chip" data-t="1556">00:25:56</span>　另有 MTS（member of technical staff）传统：研究型公司从 Xerox 起就不设职能头衔——角色塌缩的制度化表达 <span class="ts-chip" data-t="1420">00:23:40</span>。</p>
+            <p><span class="attr a-ext">外部</span>独立开发者是"全塌缩"的极端案例：一人全职能时更需要显式的"换帽仪式"——写代码戴工程帽，发版前强制切产品帽过一遍检查清单。否则默认帽子永远是工程，产品问题会静默积压。这个案例证明：角色作为"工作模式"仍有价值，即使角色作为"头衔"消失了。</p></div>
+          <div class="qa"><h4><span class="qno">Q6</span>对 vibe coding 开发者的价值＋最小实践</h4>
+            <p>你天然处于全塌缩状态。真正的危险不是不会写代码，而是以为会让 AI 写代码就自动获得了产品和设计判断——那是两个有几十年积累的学科。好消息是：学最佳实践从未如此便宜，角色切换的门槛是历史最低。</p>
+            <div class="pull">最小实践（15–30 分钟）：列出你过去两周的每项工作并标注所属学科（工程/产品/设计/运营），找出你的质心。再找出项目最需要但你从未认真做过的那个学科，让 AI 给你该学科的三条经典最佳实践，本周应用其中一条。</div></div>
+        </div>
+        <div data-pane="dd" style="display:none">
+          <div class="qa"><h4><span class="qno">＋</span>技术深入 · 追问方向</h4>
+            <p>IC 与管理者的趋同：IC 不再逐字敲代码，而是在管理 agent 和工作流——和管理者做的是同一件事，只是粒度不同 <span class="ts-chip" data-t="1859">00:30:59</span>。追问：如果人人都在"管理"，绩效评估和技能成长路径该怎么重构？</p>
+            <p>塌缩后的产品组织形式是 zone defense：产品人拉开站位覆盖空隙，而不是按功能线分工——它依赖每个人都有跨学科判断力，这正是塌缩的组织红利 <span class="ts-chip" data-t="1694">00:28:14</span>。</p></div>
+        </div>
+      </div>
+
+      <!-- 模块 4 -->
+      <div class="module" id="mod-7">
+        <div class="module-head">
+          <h3>模块四 · 规划方法与模型时机决定成败</h3>
+          <div class="sub">
+            <span>时间范围 <span class="ts-chip" data-t="1917">00:31:57</span> – 00:40:00（已剔除广告）</span>
+            <span>工作方法＋工程判断</span><span>讲解约 6 分钟</span>
+          </div>
+        </div>
+        <div class="depth-tabs">
+          <button data-d="d30">30 秒理解</button>
+          <button data-d="dn" class="on">通俗讲解</button>
+          <button data-d="dd">技术深入</button>
+        </div>
+        <div data-pane="d30" style="display:none">
+          <div class="brief"><span class="lb">30 秒版本</span>功能成败的自变量从"形态"换成了"模型时机"：同一个 Codex app，11 月发布必败、2 月发布成功。不就绪的功能不是失败，是"等待未来模型的测试资产"；同一形态可能要发布六次。9 个月计划的任何精确度都是假精确。</div>
+        </div>
+        <div data-pane="dn">
+          <div class="qa"><h4><span class="qno">Q1</span>这部分解决什么问题</h4>
+            <p>模型每几个月跃迁一次，路线图还怎么定？更实际的：一个功能试了效果不行，该砍掉还是留着？什么时候"再试一次"是执念，什么时候是正确策略？</p></div>
+          <div class="qa"><h4><span class="qno">Q2</span>作者的核心判断</h4>
+            <div class="pull"><span class="attr a-quote">原话</span>"You might need to release this thing six different times before it works — and the shape might not change at all." <span class="ts-chip" data-t="2253">00:37:33</span></div>
+            <p><span class="attr a-summ">归纳</span>过去市场反馈告诉你产品形态对不对；现在功能好不好的前提是"模型够不够聪明"，而不是形态 <span class="ts-chip" data-t="1949">00:32:29</span>。所以规划变成管理一个"等待模型的原型组合"：全部原型化，就绪的发布，不就绪的搁置，每次模型跃迁全部重试一遍。</p></div>
+          <div class="qa"><h4><span class="qno">Q3</span>用人话怎么理解</h4>
+            <p>以前做产品像种庄稼：种不活多半是种法不对。现在像海边等潮水：船浮不起来，往往不是船的问题，是水位没到。正确动作不是拆船，而是把船造好放在滩上，<b>每次涨潮把所有船都推下水再试一遍。</b></p></div>
+          <div class="qa"><h4><span class="qno">Q4</span>背后的机制</h4>
+            <p><span class="attr a-summ">归纳</span>四条操作规则：① 越短期越详细——9 个月计划加任何精度都是假精确 <span class="ts-chip" data-t="1927">00:32:07</span>；② 功能三态：就绪→发布；不就绪→搁置为资产；每次模型跃迁→全组合重试；③ 警惕肌肉记忆"代码写完了所以该上线"——写完只意味着你多了一个可对未来模型测试的资产 <span class="ts-chip" data-t="2138">00:35:38</span>；④ 同一功能的多次重发是常态：operator → Atlas 里的 agent → Codex 内嵌浏览器，本质是同一功能在不同智能水位下的重试 <span class="ts-chip" data-t="2175">00:36:15</span>。</p></div>
+          <div class="qa"><h4><span class="qno">Q5</span>原视频案例与补充案例</h4>
+            <p><span class="attr a-quote">原话大意</span>"我非常确信：2 月发布的 Codex app 如果 11 月就绪，它会在市场上彻底失败——唯一的区别是模型" <span class="ts-chip" data-t="2011">00:33:31</span>。另一案例：初版 Codex（web 版，纯委托）"we were too AGI-pilled for the moment"；Claude Code 完全本地、会提问、不假装能全自主——形态更"保守"反而赢了，因为那才是当时模型的真实水位 <span class="ts-chip" data-t="2228">00:37:08</span>。</p>
+            <p><span class="attr a-ext">外部</span>2016 年的语音助手和今天的语音 agent 是同一个交互形态，隔了一代模型，结果天差地别——形态可以先于能力存在很多年。它证明"搁置重试"的窗口可能长达数年，而不只是几个月。</p></div>
+          <div class="qa"><h4><span class="qno">Q6</span>对 vibe coding 开发者的价值＋最小实践</h4>
+            <p>你半年前得出的"AI 做 X 不行"的结论，很可能已经过期。个人项目该维护一份"重试清单"：每个被放弃的 AI 功能记下当时失败的具体原因——是形态不对，还是模型不够聪明。后者在每次模型跃迁时值得原样重跑。</p>
+            <div class="pull">最小实践（15–30 分钟）：列出你过去一年放弃的 3 个 AI 功能想法，各写一行失败原因并归类（能力问题 / 形态问题）。挑一个"能力问题"的，用当前最强模型原样重跑一次，记录差异。</div></div>
+        </div>
+        <div data-pane="dd" style="display:none">
+          <div class="qa"><h4><span class="qno">＋</span>技术深入 · 追问方向</h4>
+            <p>组织含义：同一个团队很难既守成（修 paper cuts、保可靠性）又颠覆自己，所以需要允许 bottoms-up 探索——Codex 颠覆了 ChatGPT，也会被未来的内部探索颠覆 <span class="ts-chip" data-t="2282">00:38:02</span>。</p>
+            <p>"发布六次"成立的经济前提：重发的边际成本必须足够低——这正是本课程项目"保存中间产物、换深度换语言时只复用不重算"成本设计的同构逻辑。</p></div>
+        </div>
+      </div>
+    </section>
+
+    <footer>视频课堂原型 · 视频通过 YouTube 官方嵌入播放，不复制原片 · 归属标注：<span class="attr a-quote">原话</span><span class="attr a-summ">归纳</span><span class="attr a-expl">解释</span><span class="attr a-ext">外部</span></footer>
+  </div>
+</div>
+
+<script>
+/* ── 课程数据（原型：单条样例）────────────── */
+const COURSES = {
+  "P3KDebPTUrw": {
+    map: [
+      {t:"00:00:00", s:0,    title:"开场混剪与嘉宾介绍",             act:"跳过", cls:"b-skip", skip:true,  why:"正片预告混剪，无独立信息"},
+      {t:"00:02:58", s:178,  title:"产品流程倒转：实现廉价，策展昂贵", act:"深讲", cls:"b-deep",             why:"全片主论点；含反主流的“PRD 没死”论证"},
+      {t:"00:10:33", s:633,  title:"Taste 到底是什么",               act:"快讲", cls:"b-quick",            why:"祛魅：审美只是一部分，更多是系统思维"},
+      {t:"00:12:39", s:759,  title:"AI 为什么做不好设计",             act:"深讲", cls:"b-deep",             why:"技术密度最高：四层论证"},
+      {t:"00:17:17", s:1037, title:"设计流程已死又没死",              act:"快讲", cls:"b-quick",            why:"主题 1 在设计域的延伸；baby codebase 可借用"},
+      {t:"00:21:37", s:1297, title:"角色塌缩与“平均位置”论",  act:"深讲", cls:"b-deep",             why:"对“人人都是 builder”的重要反驳"},
+      {t:"00:27:18", s:1638, title:"团队构成、zone defense 与招聘",   act:"快讲", cls:"b-quick",            why:"偏内部组织细节，可迁移性中等"},
+      {t:"00:31:57", s:1917, title:"规划方法与模型时机决定成败",       act:"深讲", cls:"b-deep",             why:"全片最新颖：“发布六次”“too AGI-pilled”"},
+      {t:"00:40:00", s:2400, title:"Supervised vs unsupervised 代码", act:"快讲", cls:"b-quick",            why:"好用的度量视角，一句话讲清"},
+      {t:"00:42:15", s:2535, title:"个人自动化工作流三案例",           act:"原片", cls:"b-raw",              why:"案例本身比转述有价值"},
+      {t:"00:49:17", s:2957, title:"浏览器形态的取舍",                act:"摘要", cls:"b-sum",              why:"产品内部权衡，对多数用户过细"},
+      {t:"00:52:02", s:3122, title:"Codex 与 ChatGPT 合并的逻辑",     act:"快讲", cls:"b-quick",            why:"解释标题问题：home base 模型"},
+      {t:"00:59:43", s:3583, title:"Fail corner：10–15 年失败史",     act:"原片", cls:"b-raw",              why:"个人故事，本人表达更有价值"},
+      {t:"01:01:52", s:3712, title:"Lightning round",                act:"跳过", cls:"b-skip", skip:true,  why:"书影闲聊，无技术内容"},
+      {t:"01:07:04", s:4024, title:"彩蛋：不要与流程结婚",             act:"快讲", cls:"b-quick",            why:"金句收尾"}
+    ]
+  }
+};
+
+/* ── 视图切换 ────────────────────────────── */
+const $ = id => document.getElementById(id);
+let player = null, playerReady = false, pendingSeek = null;
+let curMap = null;
+
+function parseVideoId(url){
+  const m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/) || url.match(/^([\w-]{11})$/);
+  return m ? m[1] : null;
+}
+
+function show(view){
+  $("state-empty").style.display = view==="empty" ? "" : "none";
+  $("state-miss").style.display  = view==="miss"  ? "" : "none";
+  $("course").classList.toggle("active", view==="course");
+}
+
+function loadCourse(vid){
+  const data = COURSES[vid];
+  if(!data){ show("miss"); return; }
+  curMap = data.map;
+  renderMap(data.map);
+  show("course");
+  initPlayer(vid);
+}
+
+function go(){
+  const raw = $("url-input").value.trim();
+  if(!raw){ show("empty"); return; }
+  const vid = parseVideoId(raw);
+  if(!vid){ show("miss"); return; }
+  loadCourse(vid);
+}
+$("go-btn").addEventListener("click", go);
+$("url-input").addEventListener("keydown", e => { if(e.key==="Enter") go(); });
+const openDemo = () => { $("url-input").value = "https://youtu.be/P3KDebPTUrw"; go(); };
+$("demo-btn").addEventListener("click", openDemo);
+$("demo-btn2").addEventListener("click", openDemo);
+
+/* ── 知识地图渲染 ─────────────────────────── */
+function renderMap(map){
+  $("map-list").innerHTML = map.map((m,i) =>
+    `<li class="${m.skip?'skip':''}" data-t="${m.s}" data-i="${i}">
+       <span class="ts">${m.t.slice(0,3)==='00:'?m.t.slice(3):m.t}</span>
+       <span class="mt">${m.title}</span>
+       <span class="badge ${m.cls}">${m.act}</span>
+     </li>`).join("");
+  $("map-table-body").innerHTML = map.map(m =>
+    `<tr class="${m.skip?'skip':''}">
+       <td>${m.title}</td>
+       <td><span class="ts-chip" data-t="${m.s}">${m.t}</span></td>
+       <td><span class="badge ${m.cls}">${m.act}</span></td>
+       <td class="why">${m.why}</td>
+     </tr>`).join("");
+}
+
+/* ── YouTube 播放器 ───────────────────────── */
+function segAt(t){
+  if(!curMap) return -1;
+  for(let i=curMap.length-1;i>=0;i--) if(t>=curMap[i].s) return i;
+  return 0;
+}
+function syncPlayback(){
+  if(!playerReady || !player.getCurrentTime) return;
+  const t = player.getCurrentTime();
+  $("now-t").textContent = fmt(t);
+  const st = player.getPlayerState ? player.getPlayerState() : 1;
+  if(st!==1 && st!==3) return;
+  const i = segAt(t);
+  document.querySelectorAll("#map-list li").forEach(li=>{
+    li.classList.toggle("playing", +li.dataset.i===i);
+  });
+}
+function initPlayer(vid){
+  if(player){ player.cueVideoById(vid); return; }
+  const boot = () => {
+    player = new YT.Player("yt-player", {
+      videoId: vid,
+      playerVars: {rel:0, modestbranding:1},
+      events: {
+        onReady: () => {
+          playerReady = true;
+          if(pendingSeek!==null){ seek(pendingSeek); pendingSeek=null; }
+          setInterval(syncPlayback, 1000);
+        }
+      }
+    });
+  };
+  if(window.YT && window.YT.Player) boot();
+  else{
+    window.onYouTubeIframeAPIReady = boot;
+    const s = document.createElement("script");
+    s.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(s);
+  }
+}
+function fmt(sec){
+  sec = Math.floor(sec);
+  const h=String(Math.floor(sec/3600)).padStart(2,"0"),
+        m=String(Math.floor(sec%3600/60)).padStart(2,"0"),
+        s=String(sec%60).padStart(2,"0");
+  return `${h}:${m}:${s}`;
+}
+function seek(t){
+  if(!playerReady){ pendingSeek=t; return; }
+  player.seekTo(t, true);
+  player.playVideo();
+}
+
+/* 全局时间戳点击（事件委托） */
+document.addEventListener("click", e => {
+  const el = e.target.closest("[data-t]");
+  if(!el) return;
+  seek(parseFloat(el.dataset.t));
+  if(window.innerWidth<=1020) window.scrollTo({top:0,behavior:"smooth"});
+});
+
+/* ── 深链：?t=秒 直接打开样例课程并跳到原片对应位置（供重讲课溯源跳回） ── */
+{
+  const tp = new URLSearchParams(location.search).get("t");
+  if (tp !== null) { openDemo(); seek(parseFloat(tp)); }
+}
+
+/* ── 深度切换（每个模块独立） ─────────────── */
+document.querySelectorAll(".module").forEach(mod=>{
+  mod.querySelector(".depth-tabs").addEventListener("click", e=>{
+    const btn = e.target.closest("button"); if(!btn) return;
+    mod.querySelectorAll(".depth-tabs button").forEach(b=>b.classList.toggle("on",b===btn));
+    mod.querySelectorAll("[data-pane]").forEach(p=>p.style.display = p.dataset.pane===btn.dataset.d ? "" : "none");
+  });
+});
+</script>
+</body>
+</html>

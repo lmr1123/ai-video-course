@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>重讲课 · 当"实现"变得廉价</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f7f2e9; --paper-deep:#efe7d8; --ink:#211d17; --ink-soft:#5c554a; --ink-faint:#8f8778;
+  --vermilion:#bd3a1d; --vermilion-soft:#f3ddd5; --ochre:#a06b12; --ochre-soft:#f0e3c8;
+  --teal:#1f6a5e; --teal-soft:#d9e8e2; --hairline:#d8cdb9; --card:#fdfaf4;
+  --serif:'Noto Serif SC',serif; --sans:'Noto Sans SC',sans-serif; --mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.85;font-size:15px;
+  background-image:radial-gradient(ellipse 900px 400px at 85% -60px, rgba(189,58,29,.055), transparent)}
+::selection{background:var(--vermilion);color:#fff}
+
+header{border-bottom:2px solid var(--ink);background:var(--paper);position:sticky;top:0;z-index:50}
+.hd-inner{max-width:1100px;margin:0 auto;padding:14px 28px;display:flex;align-items:baseline;gap:20px;flex-wrap:wrap}
+.brand{font-family:var(--serif);font-weight:900;font-size:20px;letter-spacing:.08em;white-space:nowrap}
+.brand em{font-style:normal;color:var(--vermilion)}
+.hd-title{font-size:13px;color:var(--ink-soft);flex:1;min-width:200px}
+.hd-back{font-size:12.5px;font-weight:700;color:var(--ink);text-decoration:none;border:1.5px solid var(--ink);padding:4px 14px;background:var(--card)}
+.hd-back:hover{background:var(--ink);color:var(--paper)}
+
+.stage-wrap{max-width:1100px;margin:26px auto 90px;padding:0 28px}
+
+/* 画布：16:9 分镜区 */
+.canvas-frame{border:2px solid var(--ink);background:var(--card);box-shadow:8px 8px 0 var(--paper-deep);position:relative}
+.canvas{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden}
+.shot{position:absolute;inset:0;display:none;flex-direction:column;justify-content:center;padding:6% 8%}
+.shot.active{display:flex;animation:fadein .35s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion: reduce){.shot.active{animation:none}}
+
+/* 镜头类型渲染 */
+.sv-kicker{font-family:var(--mono);font-size:clamp(10px,1.2cqw,14px);letter-spacing:.22em;color:var(--vermilion);margin-bottom:.9em}
+.shot-card .ln{font-family:var(--serif);font-weight:900;font-size:clamp(20px,4.2cqw,52px);line-height:1.5}
+.shot-card .ln+.ln{margin-top:.35em}
+.shot-quote blockquote{font-family:var(--serif);font-size:clamp(17px,3.2cqw,38px);font-weight:700;line-height:1.8;border-left:5px solid var(--ink);padding-left:1em}
+.shot-quote .who{margin-top:1.2em;font-family:var(--mono);font-size:clamp(10px,1.3cqw,15px);color:var(--ink-faint)}
+.shot-diagram .dg{display:flex;align-items:center;gap:2.2%;flex-wrap:wrap;justify-content:center}
+.shot-diagram .nd{border:2px solid var(--ink);background:var(--card);padding:.5em 1em;font-weight:700;font-size:clamp(12px,1.9cqw,22px);white-space:nowrap}
+.shot-diagram .nd.hot{background:var(--vermilion);border-color:var(--vermilion);color:#fff}
+.shot-diagram .ar{font-size:clamp(14px,2cqw,24px);color:var(--ink-faint)}
+.shot-diagram .cyc{display:grid;grid-template-columns:1fr 1fr;gap:4% 6%;max-width:78%;margin:0 auto}
+.shot-diagram .cyc .nd{white-space:normal;text-align:center}
+.shot-diagram .note{text-align:center;margin-top:2em;font-size:clamp(12px,1.6cqw,19px);color:var(--vermilion);font-weight:700}
+.shot-compare .cols{display:grid;grid-template-columns:1fr 1fr;gap:4%}
+.shot-compare .col{border:2px solid var(--ink);background:var(--card);padding:1.2em 1.4em}
+.shot-compare .col h5{font-family:var(--serif);font-size:clamp(13px,2.1cqw,24px);font-weight:900;margin-bottom:.6em;padding-bottom:.4em;border-bottom:1px solid var(--hairline)}
+.shot-compare .col.r h5{color:var(--vermilion)}
+.shot-compare li{list-style:none;font-size:clamp(11px,1.7cqw,19px);padding:.25em 0;color:var(--ink-soft)}
+.shot-case .ct{font-family:var(--serif);font-weight:900;font-size:clamp(16px,2.8cqw,32px);margin-bottom:.8em}
+.shot-case ol{list-style:none;counter-reset:s}
+.shot-case li{counter-increment:s;font-size:clamp(12px,1.9cqw,22px);padding:.45em 0 .45em 2.4em;position:relative;border-top:1px solid var(--hairline)}
+.shot-case li::before{content:counter(s);position:absolute;left:.2em;top:.45em;font-family:var(--mono);color:var(--vermilion);font-weight:700}
+.shot-check{align-items:center;text-align:center;background:var(--ink);color:var(--paper)}
+.shot-check .qm{font-family:var(--serif);font-size:clamp(30px,6cqw,72px);font-weight:900;color:var(--vermilion-soft)}
+.shot-check .q{font-family:var(--serif);font-size:clamp(16px,2.8cqw,34px);font-weight:700;max-width:80%;margin:0 auto;line-height:1.8}
+.shot-check .go{margin-top:1.6em;border:2px solid var(--paper);background:transparent;color:var(--paper);font-family:var(--sans);font-weight:700;font-size:clamp(12px,1.6cqw,18px);padding:.5em 2em;cursor:pointer}
+.shot-check .go:hover{background:var(--vermilion);border-color:var(--vermilion)}
+
+/* 控制条 */
+.ctrl{display:flex;align-items:center;gap:16px;margin-top:16px;flex-wrap:wrap}
+.btn{border:1.5px solid var(--ink);background:var(--card);font-family:var(--sans);font-weight:700;font-size:13px;padding:7px 18px;cursor:pointer;transition:all .12s}
+.btn:hover{background:var(--ink);color:var(--paper)}
+.btn.primary{background:var(--ink);color:var(--paper)}
+.btn.primary:hover{background:var(--vermilion);border-color:var(--vermilion)}
+.pos{font-family:var(--mono);font-size:12px;color:var(--ink-soft)}
+.act-label{font-size:12.5px;color:var(--vermilion);font-weight:700;margin-left:auto}
+.no-audio{font-size:11.5px;color:var(--ink-faint)}
+
+/* 进度分段 */
+.prog{display:flex;gap:3px;margin-top:12px}
+.prog span{flex:1;height:5px;background:var(--paper-deep);cursor:pointer;border:1px solid var(--hairline)}
+.prog span.done{background:var(--vermilion)}
+.prog span.cur{background:var(--ink)}
+
+/* 字幕与溯源 */
+.caption{margin-top:18px;border:1px solid var(--hairline);background:var(--card);padding:14px 20px;font-size:14px;line-height:1.9;color:var(--ink-soft)}
+.caption b{color:var(--ink)}
+.srcline{margin-top:10px;font-size:12px;color:var(--ink-faint);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.ts-chip{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--vermilion);background:var(--vermilion-soft);
+  border:1px solid rgba(189,58,29,.35);padding:1px 7px;cursor:pointer;white-space:nowrap;border-radius:2px;text-decoration:none}
+.ts-chip:hover{background:var(--vermilion);color:#fff}
+.ts-chip::before{content:"▶ ";font-size:8px}
+.attr{font-size:10.5px;font-weight:700;padding:1px 7px;border-radius:2px}
+.a-原话{background:var(--ink);color:var(--paper)}
+.a-归纳{background:var(--teal-soft);color:var(--teal);border:1px solid var(--teal)}
+.a-解释{background:var(--ochre-soft);color:var(--ochre);border:1px solid var(--ochre)}
+
+/* 导出渲染模式：只保留 1920×1080 画布 */
+body.render header,body.render .ctrl,body.render .prog,body.render .caption,body.render .srcline{display:none}
+body.render{background:var(--paper)}
+body.render .stage-wrap{max-width:none;margin:0;padding:0}
+body.render .canvas-frame{border:none;box-shadow:none;width:1920px}
+body.render .canvas{width:1920px;height:1080px;aspect-ratio:auto}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd-inner">
+    <div class="brand">视频<em>课堂</em> · 重讲课</div>
+    <div class="hd-title" id="hd-title"></div>
+    <a class="hd-back" href="../index.html">← 返回互动课程页</a>
+  </div>
+</header>
+
+<div class="stage-wrap">
+  <div class="canvas-frame"><div class="canvas" id="canvas"></div></div>
+  <div class="prog" id="prog"></div>
+  <div class="ctrl">
+    <button class="btn primary" id="play-btn">▶ 播放</button>
+    <button class="btn" id="prev-btn">上一镜</button>
+    <button class="btn" id="next-btn">下一镜</button>
+    <span class="pos" id="pos"></span>
+    <span class="no-audio" id="audio-note"></span>
+    <span class="act-label" id="act-label"></span>
+  </div>
+  <div class="caption" id="caption"></div>
+  <div class="srcline" id="srcline"></div>
+</div>
+
+<script src="storyboard.js"></script>
+<script>
+const SB = window.STORYBOARD, SHOTS = SB.shots;
+const $ = id => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const RENDER = params.get("render") === "1";
+if (RENDER) document.body.classList.add("render");
+
+$("hd-title").textContent = SB.title + " · " + SB.origin.label;
+
+/* ── 渲染分镜 ── */
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+function fmtT(sec){const h=String(Math.floor(sec/3600)).padStart(2,"0"),m=String(Math.floor(sec%3600/60)).padStart(2,"0"),s=String(sec%60).padStart(2,"0");return `${h}:${m}:${s}`}
+
+function shotHTML(s, i){
+  const v = s.visual || {};
+  if (s.type === "card") return `<div class="shot shot-card" data-i="${i}">
+      ${v.kicker?`<div class="sv-kicker">${esc(v.kicker)}</div>`:""}
+      ${(v.lines||[]).map(l=>`<div class="ln">${esc(l)}</div>`).join("")}</div>`;
+  if (s.type === "quote") return `<div class="shot shot-quote" data-i="${i}">
+      <blockquote>${esc(v.en||"")}</blockquote><div class="who">— ${esc(v.who||"")}</div></div>`;
+  if (s.type === "diagram"){
+    let body = "";
+    if (v.kind === "flow") body = `<div class="dg">${v.steps.map((st,k)=>
+        `<span class="nd${k===v.highlight?" hot":""}">${esc(st)}</span>${k<v.steps.length-1?'<span class="ar">→</span>':""}`).join("")}</div>`;
+    else if (v.kind === "cycle") body = `<div class="cyc">${v.steps.map((st,k)=>`<span class="nd${k===0?" hot":""}">${esc(st)}</span>`).join("")}</div>`;
+    else if (v.kind === "scatter") body = `<svg viewBox="0 0 640 260" style="width:78%;margin:0 auto;display:block">
+        <rect x="30" y="20" width="270" height="220" fill="none" stroke="#d8cdb9" stroke-dasharray="6 5"/>
+        <text x="165" y="14" text-anchor="middle" font-size="13" fill="#8f8778">旧：格子间（围栏）</text>
+        <line x1="120" y1="20" x2="120" y2="240" stroke="#d8cdb9"/><line x1="210" y1="20" x2="210" y2="240" stroke="#d8cdb9"/>
+        <text x="75" y="135" text-anchor="middle" font-size="14" fill="#5c554a">设计</text>
+        <text x="165" y="135" text-anchor="middle" font-size="14" fill="#5c554a">工程</text>
+        <text x="255" y="135" text-anchor="middle" font-size="14" fill="#5c554a">产品</text>
+        <text x="485" y="14" text-anchor="middle" font-size="13" fill="#8f8778">新：散点图（质心）</text>
+        ${[[400,80],[430,150],[470,60],[500,190],[540,110],[560,170],[430,210],[590,80],[520,140],[465,120]]
+          .map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="7" fill="#efe7d8" stroke="#5c554a"/>`).join("")}
+        <circle cx="493" cy="130" r="13" fill="#bd3a1d"/>
+        <text x="493" y="253" text-anchor="middle" font-size="14" fill="#bd3a1d" font-weight="700">● 你的角色 = 质心</text></svg>`;
+    return `<div class="shot shot-diagram" data-i="${i}">${body}${v.note?`<div class="note">${esc(v.note)}</div>`:""}</div>`;
+  }
+  if (s.type === "compare") return `<div class="shot shot-compare" data-i="${i}"><div class="cols">
+      <div class="col l"><h5>${esc(v.left.title)}</h5><ul>${v.left.items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div class="col r"><h5>${esc(v.right.title)}</h5><ul>${v.right.items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></div></div>`;
+  if (s.type === "case") return `<div class="shot shot-case" data-i="${i}">
+      <div class="ct">${esc(v.title)}</div><ol>${v.steps.map(x=>`<li>${esc(x)}</li>`).join("")}</ol></div>`;
+  if (s.type === "check") return `<div class="shot shot-check" data-i="${i}">
+      <div class="qm">？</div><div class="q">${esc(v.question)}</div>
+      <button class="go" data-go>继续 →</button></div>`;
+  return `<div class="shot" data-i="${i}"></div>`;
+}
+$("canvas").innerHTML = SHOTS.map(shotHTML).join("");
+$("prog").innerHTML = SHOTS.map((_,i)=>`<span data-i="${i}" title="镜头 ${i+1}"></span>`).join("");
+
+/* ── 播放状态机 ── */
+let cur = 0, playing = false, audio = null, timer = null, waitingCheck = false, hasAudio = null;
+
+function pad(n){return String(n).padStart(2,"0")}
+function audioSrc(i){return `audio/shot-${pad(i+1)}.mp3`}
+
+function showShot(i, autoplayAudio){
+  cur = Math.max(0, Math.min(SHOTS.length-1, i));
+  const s = SHOTS[cur];
+  document.querySelectorAll(".shot").forEach(el=>el.classList.toggle("active", +el.dataset.i===cur));
+  document.querySelectorAll("#prog span").forEach((el,k)=>{
+    el.classList.toggle("done", k<cur); el.classList.toggle("cur", k===cur);
+  });
+  $("pos").textContent = `${pad(cur+1)} / ${pad(SHOTS.length)} · ${s.title}`;
+  $("act-label").textContent = `第${["一","二","三","四"][s.act]}幕 · ${SB.acts[s.act]}`;
+  $("caption").innerHTML = `<b>旁白</b>　${esc(s.narration)}`;
+  $("srcline").innerHTML = `<span class="attr a-${s.attribution}">${s.attribution}</span>` +
+    (s.source.length ? `原片依据：` + s.source.map(t=>
+      `<a class="ts-chip" href="../index.html?t=${t}">${fmtT(t)}</a>`).join(" ") : `本镜头为课程组织性内容`);
+  waitingCheck = false;
+  if (playing && autoplayAudio !== false) speakShot();
+}
+
+function stopAudio(){ if(audio){audio.pause(); audio=null} if(timer){clearTimeout(timer); timer=null} }
+
+function speakShot(){
+  stopAudio();
+  const s = SHOTS[cur];
+  const a = new Audio(audioSrc(cur));
+  audio = a;
+  a.onended = () => advance();
+  a.onerror = () => { // 无音频（TTS 未生成）：按字数估读并提示
+    hasAudio = false; $("audio-note").textContent = "未找到旁白音频，按字数模拟节奏（运行 tools/tts_generate.py 生成）";
+    timer = setTimeout(advance, Math.max(3000, s.narration.length/4.5*1000));
+  };
+  a.play().then(()=>{ if(hasAudio===null){hasAudio=true} }).catch(()=>a.onerror());
+}
+
+function advance(){
+  const s = SHOTS[cur];
+  if (s.type === "check" && !waitingCheck){ waitingCheck = true; stopAudio(); return; } // 等用户点继续
+  if (cur >= SHOTS.length-1){ setPlaying(false); return; }
+  showShot(cur+1);
+}
+
+function setPlaying(p){
+  playing = p;
+  $("play-btn").textContent = p ? "⏸ 暂停" : "▶ 播放";
+  if (p) speakShot(); else stopAudio();
+}
+
+$("play-btn").addEventListener("click", ()=> setPlaying(!playing));
+$("prev-btn").addEventListener("click", ()=> showShot(cur-1));
+$("next-btn").addEventListener("click", ()=> showShot(cur+1));
+$("prog").addEventListener("click", e=>{ const el=e.target.closest("span[data-i]"); if(el) showShot(+el.dataset.i); });
+$("canvas").addEventListener("click", e=>{ if(e.target.closest("[data-go]")){ waitingCheck=false; showShot(cur+1); } });
+document.addEventListener("keydown", e=>{
+  if(e.key===" "){ e.preventDefault(); setPlaying(!playing); }
+  if(e.key==="ArrowRight") showShot(cur+1);
+  if(e.key==="ArrowLeft") showShot(cur-1);
+});
+
+/* 导出渲染模式：?render=1&shot=N 静态显示第 N 镜 */
+if (RENDER){
+  const n = parseInt(params.get("shot")||"0",10);
+  showShot(n, false);
+} else {
+  showShot(0, false);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+[
+  {
+    "shot": 1,
+    "file": "shot-01.mp3",
+    "duration": 23.544,
+    "chars": 114
+  },
+  {
+    "shot": 2,
+    "file": "shot-02.mp3",
+    "duration": 20.136,
+    "chars": 116
+  },
+  {
+    "shot": 3,
+    "file": "shot-03.mp3",
+    "duration": 18.648,
+    "chars": 75
+  },
+  {
+    "shot": 4,
+    "file": "shot-04.mp3",
+    "duration": 16.776,
+    "chars": 79
+  },
+  {
+    "shot": 5,
+    "file": "shot-05.mp3",
+    "duration": 18.072,
+    "chars": 84
+  },
+  {
+    "shot": 6,
+    "file": "shot-06.mp3",
+    "duration": 24.24,
+    "chars": 119
+  },
+  {
+    "shot": 7,
+    "file": "shot-07.mp3",
+    "duration": 24.792,
+    "chars": 115
+  },
+  {
+    "shot": 8,
+    "file": "shot-08.mp3",
+    "duration": 10.152,
+    "chars": 47
+  },
+  {
+    "shot": 9,
+    "file": "shot-09.mp3",
+    "duration": 19.632,
+    "chars": 92
+  },
+  {
+    "shot": 10,
+    "file": "shot-10.mp3",
+    "duration": 19.248,
+    "chars": 87
+  },
+  {
+    "shot": 11,
+    "file": "shot-11.mp3",
+    "duration": 27.36,
+    "chars": 145
+  },
+  {
+    "shot": 12,
+    "file": "shot-12.mp3",
+    "duration": 13.512,
+    "chars": 63
+  },
+  {
+    "shot": 13,
+    "file": "shot-13.mp3",
+    "duration": 24.864,
+    "chars": 110
+  },
+  {
+    "shot": 14,
+    "file": "shot-14.mp3",
+    "duration": 20.04,
+    "chars": 93
+  },
+  {
+    "shot": 15,
+    "file": "shot-15.mp3",
+    "duration": 21.936,
+    "chars": 101
+  },
+  {
+    "shot": 16,
+    "file": "shot-16.mp3",
+    "duration": 20.904,
+    "chars": 102
+  },
+  {
+    "shot": 17,
+    "file": "shot-17.mp3",
+    "duration": 26.52,
+    "chars": 117
+  }
+]
