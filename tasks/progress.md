@@ -1,5 +1,20 @@
 # Progress
 
+## 2026-07-12 · GitHub Pages 移动端部署
+
+范围：把互动课程页、AI 教师重讲页和旁白音频部署为手机可访问的静态站点。
+
+- [x] 现有 GitHub 仓库按用户确认改为公开并启用 Pages
+- [x] GitHub Actions 自动发布 `prototype/`
+- [x] 390×844 手机视口验证主课程与重讲页
+- [x] 公网首页、重讲页与 MP3 资源验证为 HTTP 200
+
+### Review
+
+- 在线地址：`https://lmr1123.github.io/ai-video-course/`
+- 重讲地址：`https://lmr1123.github.io/ai-video-course/relecture/`
+- 移动端验证：无横向溢出、零控制台错误；主课程可加载，17 个重讲分镜完整。
+
 ## 2026-07-12 · 重讲模式自建管线首集跑通（L1+L2+L3）
 
 范围：按 `docs/重讲模式方案.md` 实现整条管线并产出首集重讲课（Codex 访谈，17 镜、四幕、旁白 5.8 分钟）。
