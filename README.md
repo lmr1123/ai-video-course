@@ -40,3 +40,24 @@ python3 tools/build_export.py                        # 分镜截图 + HyperFrame
 ```
 
 依赖：Python 3 + `pip install edge-tts playwright`、ffmpeg；MP4 的 HyperFrames 渲染路线另需 Node ≥ 22（`npx hyperframes render`）。
+
+## 自动生成课程
+
+自动管线在本地运行，API 密钥不会进入网页或仓库：
+
+```bash
+pip install -r requirements.txt
+export OPENAI_API_KEY="你的密钥"
+python3 tools/course_pipeline.py "https://youtu.be/VIDEO_ID"
+```
+
+流程：`YouTube URL → yt-dlp 英文字幕与元数据 → OpenAI Responses API 结构化课程 → 时间戳/schema 校验 → prototype/generated/`。默认模型为 `gpt-5.4`，可用 `OPENAI_MODEL` 或 `--model` 覆盖。
+
+生成成功后，本地打开 `http://localhost:8737/generated/viewer.html?id=VIDEO_ID`。提交 `prototype/generated/` 后，GitHub Pages 会自动发布；首页输入框也会通过 `manifest.json` 识别已生成课程。
+
+不调用 API 的离线回归：
+
+```bash
+python3 tools/course_pipeline.py --fixture tests/fixtures/course.json --output-root /tmp/course-output
+python3 -m unittest tests/test_course_pipeline.py -v
+```

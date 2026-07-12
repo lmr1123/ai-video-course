@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生成课程 · 视频课堂</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎓</text></svg>">
+<style>
+:root{--paper:#f7f2e9;--deep:#efe7d8;--card:#fdfaf4;--ink:#211d17;--soft:#5c554a;--faint:#8f8778;--red:#bd3a1d;--line:#d8cdb9;--ochre:#a06b12;--teal:#1f6a5e}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.8 system-ui,-apple-system,"Noto Sans SC",sans-serif}
+button{font:inherit}a{color:inherit}.shell{max-width:1240px;margin:auto;padding:24px 24px 96px}.top{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:24px}.brand{font:900 22px/1.2 Georgia,"Noto Serif SC",serif}.brand em{color:var(--red);font-style:normal}.back{font-size:12px}
+.layout{display:grid;grid-template-columns:420px minmax(0,1fr);gap:38px;align-items:start}.side,main{min-width:0}.side{position:sticky;top:18px}.video{width:100%;aspect-ratio:16/9;background:#000;border:2px solid var(--ink)}.video iframe{width:100%;height:100%;border:0}.time{font:12px ui-monospace,monospace;color:var(--red);margin:8px 0}.map{list-style:none;padding:0;margin:18px 0 0;max-height:48vh;overflow:auto}.map li{display:grid;grid-template-columns:52px 1fr auto;gap:8px;padding:8px;border-bottom:1px solid var(--line);cursor:pointer}.map li.active{background:var(--card)}.map time{font:11px ui-monospace,monospace;color:var(--faint)}.badge{font-size:10px;border:1px solid;padding:0 6px;height:max-content}.深讲{color:var(--red)}.快讲{color:var(--ochre)}.原片{color:var(--teal)}
+.eyebrow{font-size:12px;color:var(--faint)}h1,h2,h3,h4{font-family:Georgia,"Noto Serif SC",serif;line-height:1.45}h1{font-size:30px;margin:8px 0 12px}h2{font-size:21px;margin:44px 0 16px}.lead{font-size:17px;color:var(--soft);max-width:68ch}.facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin:22px 0}.fact{background:var(--card);padding:14px}.fact b{display:block;font-size:12px;margin-bottom:4px}
+.claims{padding-left:22px}.claims li{margin:8px 0}.ts{font:11px ui-monospace,monospace;color:var(--red);border-bottom:1px solid;cursor:pointer;white-space:nowrap}.module{margin:0 0 56px}.module-head{border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:14px}.module-head h3{margin:0;font-size:20px}.meta{font-size:12px;color:var(--soft)}.summary{background:var(--ink);color:var(--paper);padding:16px 18px;margin:14px 0}.cards{display:flex;flex-direction:column;gap:12px}.card{background:var(--card);border:1px solid var(--line);padding:18px 20px}.card h4{font-size:15px;margin:0 0 8px}.card p{margin:0;white-space:pre-line}.evidence{padding:10px 0;border-top:1px solid var(--line)}.evidence:first-of-type{border-top:0}.attr{font-size:10px;font-weight:800;color:var(--red);margin-right:6px}
+.recall{background:var(--card);border:1px solid var(--line);padding:22px;margin-top:54px}.recall textarea{width:100%;min-height:140px;padding:12px;border:1.5px solid var(--ink);background:#fffdf8;font:14px/1.7 inherit}.recall button{margin-top:10px;padding:8px 16px;border:1px solid var(--ink);background:var(--ink);color:var(--paper);font-weight:700}.reference{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}
+.error{max-width:680px;margin:15vh auto;background:var(--card);border:1px solid var(--line);padding:24px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.side{position:static}.map{max-height:none}h1{font-size:25px}.facts{grid-template-columns:1fr}.shell{padding:16px 14px 72px}.card{padding:15px 14px}}
+</style>
+</head>
+<body>
+<div class="shell" id="app"><div class="error">正在加载课程…</div></div>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=s=>`${String(Math.floor(s/3600)).padStart(2,"0")}:${String(Math.floor(s%3600/60)).padStart(2,"0")}:${String(Math.floor(s%60)).padStart(2,"0")}`;
+const id=new URLSearchParams(location.search).get("id");let player,course;
+const stamp=s=>`<button class="ts" data-t="${s}" type="button">${fmt(s)}</button>`;
+function evidence(items){return items.map(x=>`<div class="evidence"><span class="attr">${esc(x.attribution)}</span>${esc(x.text)} ${x.start_sec===null?"":stamp(x.start_sec)}</div>`).join("")}
+function render(c){
+ course=c;document.title=`${c.course_title} · 视频课堂`;
+ document.getElementById("app").innerHTML=`
+  <header class="top"><div class="brand">视频<em>课堂</em></div><a class="back" href="../">← 返回课程入口</a></header>
+  <div class="layout"><aside class="side"><div class="video" id="player"></div><div class="time" id="now">00:00:00</div><ol class="map">${c.topics.map((x,i)=>`<li data-i="${i}" data-t="${x.start_sec}"><time>${fmt(x.start_sec).replace(/^00:/,"")}</time><span>${esc(x.title)}</span><span class="badge ${x.action}">${x.action}</span></li>`).join("")}</ol></aside>
+  <main><div class="eyebrow">${esc(c.channel)} · ${Math.round(c.duration_sec/60)} 分钟</div><h1>${esc(c.course_title)}</h1><p class="lead">${esc(c.one_sentence)}</p>
+  <div class="facts"><div class="fact"><b>适合谁</b>${esc(c.audience)}</div><div class="fact"><b>前置知识</b>${c.prerequisites.map(esc).join(" · ")}</div><div class="fact"><b>预期收获</b>${c.expected_gain.map(esc).join(" · ")}</div><div class="fact"><b>原视频</b>${esc(c.source_title)}</div></div>
+  <h2>核心主张</h2><ol class="claims">${c.claims.map(x=>`<li>${esc(x.text)} ${stamp(x.start_sec)}</li>`).join("")}</ol>
+  <h2>深讲模块</h2>${c.deep_modules.map((m,n)=>`<section class="module"><div class="module-head"><h3>模块${n+1} · ${esc(m.title)}</h3><div class="meta">${fmt(m.start_sec)}–${fmt(m.end_sec)} · ${esc(m.content_type)} · ${esc(m.learning_goal)}</div></div><div class="summary">${esc(m.summary_30s)}</div><div class="cards">
+   <article class="card"><h4>问题</h4><p>${esc(m.problem)}</p></article><article class="card"><h4>作者的核心判断</h4>${evidence(m.author_judgment)}</article><article class="card"><h4>用人话理解</h4><p>${esc(m.plain_explanation)}</p></article><article class="card"><h4>背后的机制</h4><p>${esc(m.mechanism)}</p></article><article class="card"><h4>案例</h4>${evidence(m.cases)}</article><article class="card"><h4>对项目的价值</h4><p>${esc(m.value)}</p></article><article class="card"><h4>最小实践</h4><p>${esc(m.practice)}</p></article><article class="card"><h4>技术深入</h4><p>${esc(m.technical_deep_dive)}</p></article>
+  </div></section>`).join("")}
+  <section class="recall"><h2>学完后复述核心机制</h2><p>${esc(c.recall_prompt)}</p><textarea id="answer" aria-label="闭卷复述"></textarea><button id="submit" type="button">完成复述，查看自检</button><div class="reference" id="reference" hidden><b>对照要点</b><ul>${c.recall_points.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></section></main></div>`;
+ const key=`ai-video-course:${c.video_id}:recall`,saved=localStorage.getItem(key);if(saved)document.getElementById("answer").value=saved;
+ document.getElementById("submit").onclick=()=>{const v=document.getElementById("answer").value.trim();if(!v){document.getElementById("answer").focus();return}localStorage.setItem(key,v);document.getElementById("reference").hidden=false};
+ document.addEventListener("click",e=>{const x=e.target.closest("[data-t]");if(x&&player&&player.seekTo){player.seekTo(+x.dataset.t,true);player.playVideo()}});
+ bootPlayer();
+}
+function bootPlayer(){const create=()=>player=new YT.Player("player",{videoId:course.video_id,playerVars:{rel:0,cc_load_policy:1,cc_lang_pref:"en"},events:{onReady:()=>setInterval(sync,1000)}});if(window.YT&&YT.Player)create();else window.onYouTubeIframeAPIReady=create}
+function sync(){if(!player?.getCurrentTime)return;const t=player.getCurrentTime();document.getElementById("now").textContent=fmt(t);let i=0;course.topics.forEach((x,n)=>{if(t>=x.start_sec)i=n});document.querySelectorAll(".map li").forEach((x,n)=>x.classList.toggle("active",n===i))}
+async function start(){
+ if(!id||!/^[\w-]{11}$/.test(id))throw Error("课程 id 无效");
+ const response=await fetch(`${encodeURIComponent(id)}/course.json`);if(!response.ok)throw Error("课程不存在");render(await response.json());
+}
+start().catch(e=>document.getElementById("app").innerHTML=`<div class="error"><h1>无法加载课程</h1><p>${esc(e.message)}</p><a href="../">返回课程入口</a></div>`);
+</script>
+</body>
+</html>

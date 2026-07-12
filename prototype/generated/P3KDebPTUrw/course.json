@@ -1,0 +1,170 @@
+{
+  "video_id": "P3KDebPTUrw",
+  "source_url": "https://youtu.be/P3KDebPTUrw",
+  "source_title": "Why OpenAI is merging Codex and ChatGPT",
+  "channel": "Lenny's Podcast",
+  "duration_sec": 4200,
+  "course_title": "当实现变得廉价，产品工作会倒转成什么样",
+  "one_sentence": "AI 让实现成本骤降后，产品工作的瓶颈从做出来转向判断什么值得做、何时发布以及如何组织反馈。",
+  "audience": "有基础项目经验、希望补齐产品与工程判断的 vibe coding 开发者",
+  "prerequisites": [
+    "能使用 AI 编程工具",
+    "做过至少一个完整项目"
+  ],
+  "expected_gain": [
+    "识别实现廉价后的新瓶颈",
+    "按反馈目的选择文档或原型",
+    "建立等待模型重试的功能组合"
+  ],
+  "claims": [
+    {
+      "text": "实现不再是最昂贵的部分，稀缺的是判断与策展。",
+      "start_sec": 303
+    },
+    {
+      "text": "角色边界会塌缩，但学科积累与专业重心不会消失。",
+      "start_sec": 1316
+    },
+    {
+      "text": "AI 产品可能需要用不同模型时机重复发布同一种形态。",
+      "start_sec": 2253
+    }
+  ],
+  "topics": [
+    {
+      "title": "开场与嘉宾介绍",
+      "start_sec": 0,
+      "end_sec": 178,
+      "action": "跳过",
+      "importance": "低",
+      "difficulty": "低",
+      "core": "节目预告与背景。",
+      "why": "没有形成独立论证。"
+    },
+    {
+      "title": "实现廉价，策展昂贵",
+      "start_sec": 178,
+      "end_sec": 633,
+      "action": "深讲",
+      "importance": "高",
+      "difficulty": "中",
+      "core": "实现成本下降后，判断与筛选成为瓶颈。",
+      "why": "这是全片主论点。"
+    },
+    {
+      "title": "AI 为什么做不好设计",
+      "start_sec": 759,
+      "end_sec": 1037,
+      "action": "快讲",
+      "importance": "高",
+      "difficulty": "高",
+      "core": "设计反馈难自动评分且要求新颖性。",
+      "why": "解释模型当前能力边界。"
+    },
+    {
+      "title": "角色塌缩与平均位置",
+      "start_sec": 1297,
+      "end_sec": 1638,
+      "action": "快讲",
+      "importance": "高",
+      "difficulty": "中",
+      "core": "围栏消失不等于专业消失。",
+      "why": "影响个人技能规划。"
+    },
+    {
+      "title": "模型时机决定成败",
+      "start_sec": 1917,
+      "end_sec": 2400,
+      "action": "深讲",
+      "importance": "高",
+      "difficulty": "中",
+      "core": "功能形态可能正确，只是模型水位未到。",
+      "why": "给出新的路线图管理方法。"
+    }
+  ],
+  "deep_modules": [
+    {
+      "title": "实现廉价之后，贵的是策展",
+      "start_sec": 178,
+      "end_sec": 633,
+      "content_type": "核心观点与工作方法",
+      "learning_goal": "能判断什么时候该写文档、做原型或直接实现",
+      "summary_30s": "实现廉价后，做出来不再稀缺；真正稀缺的是从大量尝试中判断什么值得继续，并为目标选择正确的反馈媒介。",
+      "problem": "传统产品流程假设实现最昂贵。当 AI 让实现接近免费，先文档后原型再实现的顺序是否还成立？",
+      "author_judgment": [
+        {
+          "attribution": "原话",
+          "text": "实现实际上不再是昂贵的部分，昂贵的是 taste。",
+          "start_sec": 303
+        },
+        {
+          "attribution": "归纳",
+          "text": "PRD 没有死，文档和原型分别适合澄清方向与压测交互。",
+          "start_sec": 438
+        }
+      ],
+      "plain_explanation": "以前盖房子贵，所以先用图纸降险；现在人人都能一夜盖出毛坯房，问题变成哪栋值得留下。",
+      "mechanism": "实现廉价切断了媒介精致度与产品阶段之间的旧信号。团队必须显式说明当前处于探索、验证还是待发布阶段。",
+      "cases": [
+        {
+          "attribution": "原话",
+          "text": "OpenAI 内部同一个急需功能可能同时出现 90 个未协调原型。",
+          "start_sec": 232
+        },
+        {
+          "attribution": "外部",
+          "text": "精致记账应用原型让用户只评论按钮和配色，反而遮蔽了是否愿意使用的方向反馈。",
+          "start_sec": null
+        }
+      ],
+      "value": "避免 AI 生成的第一版过早成为默认方案；先明确要的是方向反馈还是交互反馈。",
+      "practice": "选一个模糊需求，先写半页是什么、为谁、不做什么，再让 AI 实现并记录返工差异。",
+      "technical_deep_dive": "可用独立 baby codebase 把探索代码与生产代码物理隔离，让阶段信息重新进入工作系统。"
+    },
+    {
+      "title": "规划方法与模型时机决定成败",
+      "start_sec": 1917,
+      "end_sec": 2400,
+      "content_type": "工作方法与工程判断",
+      "learning_goal": "能区分功能失败是形态问题还是模型能力问题",
+      "summary_30s": "AI 功能可能形态没错，只是模型水位未到；不成熟原型应作为未来模型的测试资产保留。",
+      "problem": "模型几个月跃迁一次，功能试验失败后应该删除，还是等待下一代模型重试？",
+      "author_judgment": [
+        {
+          "attribution": "原话",
+          "text": "同一个东西可能需要发布六次才会成功，形态甚至完全不变。",
+          "start_sec": 2253
+        },
+        {
+          "attribution": "归纳",
+          "text": "规划变成管理一组等待模型的原型，而不是维护一张精确到九个月的排期表。",
+          "start_sec": 1949
+        }
+      ],
+      "plain_explanation": "船浮不起来不一定是船坏了，也可能只是潮水没到；正确动作是保留船，涨潮时重新下水。",
+      "mechanism": "功能价值依赖形态与模型能力的乘积。模型是快速变化的外生变量，因此能力型失败需要周期性重跑。",
+      "cases": [
+        {
+          "attribution": "原话",
+          "text": "二月发布的 Codex app 如果十一月就绪，会因为模型不同而失败。",
+          "start_sec": 2011
+        },
+        {
+          "attribution": "解释",
+          "text": "把失败原因标记为能力或形态，才能知道下次模型跃迁时是否值得原样重试。",
+          "start_sec": 2138
+        }
+      ],
+      "value": "避免把半年前的能力判断永久化，也避免因为代码写完就误以为功能应该上线。",
+      "practice": "列出三个放弃的 AI 功能，标记能力问题或形态问题；挑一个能力问题用当前模型原样重跑。",
+      "technical_deep_dive": "重发成立的经济前提是保存中间产物并降低重试边际成本，这与缓存课程结构的生成管线同构。"
+    }
+  ],
+  "recall_prompt": "请用自己的话复述：AI 让实现变廉价后，产品工作为什么会倒转？",
+  "recall_points": [
+    "稀缺资源从实现转向判断和策展",
+    "原型精致度不再代表产品阶段",
+    "文档与原型应按反馈目的选择",
+    "第一版不应过早成为默认方案"
+  ]
+}

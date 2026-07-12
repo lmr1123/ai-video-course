@@ -28,6 +28,7 @@
   --mono:'IBM Plex Mono',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 html{scroll-behavior:smooth}
 body{
   font-family:var(--sans);color:var(--ink);background:var(--paper);
@@ -209,7 +210,7 @@ section{margin-bottom:52px}
 .map-stats b{color:var(--vermilion)}
 
 /* module */
-.module{border-left:3px solid var(--vermilion);padding-left:26px;margin-bottom:56px}
+.module{margin-bottom:64px}
 .module:last-child{margin-bottom:0}
 .module-head h3{font-family:var(--serif);font-size:19px;font-weight:900;line-height:1.5}
 .module-head .sub{font-size:12.5px;color:var(--ink-soft);margin:6px 0 4px;display:flex;gap:16px;flex-wrap:wrap}
@@ -221,22 +222,36 @@ section{margin-bottom:52px}
 }
 .depth-tabs button:last-child{border-right:none}
 .depth-tabs button.on{background:var(--ink);color:var(--paper)}
-.qa{margin-bottom:24px}
+.qa{margin-bottom:12px;padding:18px 20px;background:var(--card);border:1px solid var(--hairline)}
 .qa h4{
-  font-family:var(--serif);font-size:15px;font-weight:700;margin-bottom:8px;
+  font-family:var(--serif);font-size:15px;font-weight:900;margin-bottom:10px;
   display:flex;align-items:baseline;gap:10px;
 }
 .qa h4 .qno{font-family:var(--mono);font-size:11px;color:var(--vermilion);font-weight:500}
 .qa p{font-size:14px;margin-bottom:8px}
 .qa .pull{
-  font-family:var(--serif);font-size:15px;line-height:2;background:var(--card);
-  border:1px solid var(--hairline);border-left:3px solid var(--ink);
-  padding:14px 18px;margin:10px 0;
+  font-family:var(--serif);font-size:15px;line-height:2;
+  border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);
+  padding:12px 0;margin:12px 0;
 }
 .brief{
   background:var(--ink);color:var(--paper);padding:20px 24px;font-size:14px;line-height:2;
 }
 .brief .lb{font-size:11px;letter-spacing:.2em;color:var(--vermilion-soft);display:block;margin-bottom:6px}
+
+/* recall check */
+.recall{margin-top:64px;padding:26px;background:var(--card);border:1px solid var(--hairline)}
+.recall h3{font-family:var(--serif);font-size:19px;font-weight:900;margin-bottom:8px}
+.recall .hint{font-size:13px;color:var(--ink-soft);margin-bottom:16px}
+.recall textarea{width:100%;min-height:150px;resize:vertical;border:1.5px solid var(--ink);background:#fffdf8;color:var(--ink);padding:14px;font:14px/1.8 var(--sans)}
+.recall textarea:focus-visible{outline:3px solid var(--ochre-soft);outline-offset:2px}
+.recall-actions{display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap}
+.recall button{border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);padding:8px 18px;font:700 13px var(--sans);cursor:pointer}
+.recall button:hover{background:var(--vermilion);border-color:var(--vermilion)}
+.recall-status{font-size:12px;color:var(--ink-soft)}
+.recall-reference{margin-top:22px;padding-top:18px;border-top:1px solid var(--hairline)}
+.recall-reference h4{font-family:var(--serif);font-size:15px;margin-bottom:10px}
+.recall-reference ul{padding-left:20px;font-size:13.5px;line-height:1.8}
 
 footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;font-size:11.5px;color:var(--ink-faint)}
 
@@ -251,6 +266,7 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
   .map-list{max-height:none}
   .deck-grid{grid-template-columns:1fr}
   .subtitle-box{min-height:38px;padding:7px 10px;font-size:12px}
+  .qa{padding:15px 14px}.recall{padding:20px 16px}
 }
 </style>
 </head>
@@ -513,6 +529,26 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
       </div>
     </section>
 
+    <section class="recall" id="recall-check">
+      <h3>学完后复述核心机制</h3>
+      <p class="hint">先合上上面的讲义，用自己的话回答。提交前不会显示参考要点。</p>
+      <label for="recall-answer" class="sr-only">请用自己的话复述本课核心机制</label>
+      <textarea id="recall-answer" placeholder="请复述：AI 让实现变廉价后，产品工作为什么会倒转？"></textarea>
+      <div class="recall-actions">
+        <button id="recall-submit" type="button">完成复述，查看自检</button>
+        <span class="recall-status" id="recall-status"></span>
+      </div>
+      <div class="recall-reference" id="recall-reference" hidden>
+        <h4>对照时检查是否讲清这四点</h4>
+        <ul>
+          <li>实现成本下降后，稀缺资源从“做出来”转向判断、筛选和策展。</li>
+          <li>精致原型不再代表接近完成，媒介与产品阶段之间的旧信号断裂。</li>
+          <li>因此团队要显式声明探索、验证或发布阶段，并按想获得的反馈选择文档或原型。</li>
+          <li>这个机制能迁移到自己的项目：避免第一版过早成为默认方案。</li>
+        </ul>
+      </div>
+    </section>
+
     <footer>视频课堂原型 · 视频通过 YouTube 官方嵌入播放，不复制原片 · 归属标注：<span class="attr a-quote">原话</span><span class="attr a-summ">归纳</span><span class="attr a-expl">解释</span><span class="attr a-ext">外部</span></footer>
   </div>
 </div>
@@ -568,12 +604,17 @@ function loadCourse(vid){
   initPlayer(vid);
 }
 
-function go(){
+async function go(){
   const raw = $("url-input").value.trim();
   if(!raw){ show("empty"); return; }
   const vid = parseVideoId(raw);
   if(!vid){ show("miss"); return; }
-  loadCourse(vid);
+  if(COURSES[vid]){loadCourse(vid);return}
+  try{
+    const manifest=await fetch("generated/manifest.json",{cache:"no-store"}).then(r=>r.json());
+    if(manifest.courses.some(c=>c.video_id===vid)){location.href=`generated/viewer.html?id=${encodeURIComponent(vid)}`;return}
+  }catch(e){}
+  show("miss");
 }
 $("go-btn").addEventListener("click", go);
 $("url-input").addEventListener("keydown", e => { if(e.key==="Enter") go(); });
@@ -688,6 +729,18 @@ document.querySelectorAll(".module").forEach(mod=>{
     mod.querySelectorAll(".depth-tabs button").forEach(b=>b.classList.toggle("on",b===btn));
     mod.querySelectorAll("[data-pane]").forEach(p=>p.style.display = p.dataset.pane===btn.dataset.d ? "" : "none");
   });
+});
+
+/* ── 闭卷复述验收 ───────────────────────── */
+const recallKey="ai-video-course:P3KDebPTUrw:recall";
+const savedRecall=localStorage.getItem(recallKey);
+if(savedRecall){$("recall-answer").value=savedRecall;$("recall-status").textContent="已恢复上次作答"}
+$("recall-submit").addEventListener("click",()=>{
+  const answer=$("recall-answer").value.trim();
+  if(!answer){$("recall-status").textContent="请先写下你的复述";$("recall-answer").focus();return}
+  localStorage.setItem(recallKey,answer);
+  $("recall-reference").hidden=false;
+  $("recall-status").textContent="已保存到当前浏览器，请自行对照四项要点";
 });
 </script>
 </body>

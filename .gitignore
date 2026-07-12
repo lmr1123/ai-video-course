@@ -9,3 +9,9 @@ prototype/*.bak-*
 
 # Claude 本机权限
 .claude/settings.local.json
+
+# 本地模型密钥
+.env
+.env.*
+__pycache__/
+*.pyc
