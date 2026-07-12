@@ -91,11 +91,19 @@ header{
 .player-frame{border:2px solid var(--ink);background:#000;box-shadow:8px 8px 0 var(--paper-deep)}
 .player-frame .ratio{position:relative;padding-top:56.25%}
 .player-frame iframe,#yt-player{position:absolute;inset:0;width:100%;height:100%;border:0}
+.subtitle-box{
+  position:absolute;z-index:3;left:5%;right:5%;bottom:42px;text-align:center;pointer-events:none;
+  text-shadow:0 1px 3px #000,0 1px 8px #000;
+}
+.subtitle-box:empty{display:none}
+.subtitle-en,.subtitle-zh{display:block;width:fit-content;max-width:100%;margin:2px auto;padding:2px 7px;background:rgba(0,0,0,.72);color:#fff;line-height:1.4}
+.subtitle-en{font-size:14px}.subtitle-zh{font-size:15px;font-weight:700}
 .now-playing{
   display:flex;justify-content:space-between;align-items:baseline;gap:12px;
   font-size:12px;color:var(--ink-soft);margin:12px 2px 0;
 }
 .now-playing .t{font-family:var(--mono);color:var(--vermilion);font-weight:500}
+.subtitle-toggle{border:0;background:none;color:var(--ink-soft);font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
 
 /* knowledge map nav */
 .map-nav{margin-top:26px}
@@ -115,6 +123,9 @@ header{
 .map-list li.playing{background:var(--card)}
 .map-list li.playing .ts{color:var(--vermilion);font-weight:700}
 .map-list li.playing .mt{font-weight:700}
+.map-detail{display:none;grid-column:2/4;padding:2px 0 7px;font-size:12px;line-height:1.65;color:var(--ink-soft)}
+.map-list li.playing .map-detail{display:block}
+.map-detail strong{color:var(--ink);font-weight:700}
 .map-list .ts{font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
 .map-list .mt{font-size:13px;line-height:1.5}
 .badge{
@@ -244,6 +255,7 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
   .left{position:static}
   .map-list{max-height:none}
   .deck-grid{grid-template-columns:1fr}
+  .subtitle-box{left:2%;right:2%;bottom:34px}.subtitle-en{font-size:11px}.subtitle-zh{font-size:12px}
 }
 </style>
 </head>
@@ -283,9 +295,9 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
 <!-- 课程视图 -->
 <div class="wrap" id="course">
   <div class="left">
-    <div class="player-frame"><div class="ratio"><div id="yt-player"></div></div></div>
+    <div class="player-frame"><div class="ratio"><div id="yt-player"></div><div class="subtitle-box" id="subtitle-box" aria-live="polite"></div></div></div>
     <div class="now-playing">
-      <span>点击任意时间戳，视频跳转到对应位置</span>
+      <span>点击时间戳跳转 · <button class="subtitle-toggle" id="subtitle-toggle" type="button">关闭双语字幕</button></span>
       <span class="t" id="now-t">00:00:00</span>
     </div>
     <nav class="map-nav">
@@ -515,21 +527,21 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
 const COURSES = {
   "P3KDebPTUrw": {
     map: [
-      {t:"00:00:00", s:0,    title:"开场混剪与嘉宾介绍",             act:"跳过", cls:"b-skip", skip:true,  why:"正片预告混剪，无独立信息"},
-      {t:"00:02:58", s:178,  title:"产品流程倒转：实现廉价，策展昂贵", act:"深讲", cls:"b-deep",             why:"全片主论点；含反主流的“PRD 没死”论证"},
-      {t:"00:10:33", s:633,  title:"Taste 到底是什么",               act:"快讲", cls:"b-quick",            why:"祛魅：审美只是一部分，更多是系统思维"},
-      {t:"00:12:39", s:759,  title:"AI 为什么做不好设计",             act:"深讲", cls:"b-deep",             why:"技术密度最高：四层论证"},
-      {t:"00:17:17", s:1037, title:"设计流程已死又没死",              act:"快讲", cls:"b-quick",            why:"主题 1 在设计域的延伸；baby codebase 可借用"},
-      {t:"00:21:37", s:1297, title:"角色塌缩与“平均位置”论",  act:"深讲", cls:"b-deep",             why:"对“人人都是 builder”的重要反驳"},
-      {t:"00:27:18", s:1638, title:"团队构成、zone defense 与招聘",   act:"快讲", cls:"b-quick",            why:"偏内部组织细节，可迁移性中等"},
-      {t:"00:31:57", s:1917, title:"规划方法与模型时机决定成败",       act:"深讲", cls:"b-deep",             why:"全片最新颖：“发布六次”“too AGI-pilled”"},
-      {t:"00:40:00", s:2400, title:"Supervised vs unsupervised 代码", act:"快讲", cls:"b-quick",            why:"好用的度量视角，一句话讲清"},
-      {t:"00:42:15", s:2535, title:"个人自动化工作流三案例",           act:"原片", cls:"b-raw",              why:"案例本身比转述有价值"},
-      {t:"00:49:17", s:2957, title:"浏览器形态的取舍",                act:"摘要", cls:"b-sum",              why:"产品内部权衡，对多数用户过细"},
-      {t:"00:52:02", s:3122, title:"Codex 与 ChatGPT 合并的逻辑",     act:"快讲", cls:"b-quick",            why:"解释标题问题：home base 模型"},
-      {t:"00:59:43", s:3583, title:"Fail corner：10–15 年失败史",     act:"原片", cls:"b-raw",              why:"个人故事，本人表达更有价值"},
-      {t:"01:01:52", s:3712, title:"Lightning round",                act:"跳过", cls:"b-skip", skip:true,  why:"书影闲聊，无技术内容"},
-      {t:"01:07:04", s:4024, title:"彩蛋：不要与流程结婚",             act:"快讲", cls:"b-quick",            why:"金句收尾"}
+      {t:"00:00:00", s:0, title:"开场混剪与嘉宾介绍", act:"跳过", cls:"b-skip", skip:true, why:"正片预告混剪，无独立信息", core:"嘉宾与全片观点预告，没有形成独立论证。"},
+      {t:"00:02:58", s:178, title:"产品流程倒转：实现廉价，策展昂贵", act:"深讲", cls:"b-deep", why:"全片主论点；含反主流的“PRD 没死”论证", core:"AI 降低实现成本后，稀缺能力从编码转为判断、筛选与为反馈选择正确媒介。"},
+      {t:"00:10:33", s:633, title:"Taste 到底是什么", act:"快讲", cls:"b-quick", why:"祛魅：审美只是一部分，更多是系统思维", core:"Taste 不只是视觉审美，而是识别方向、系统关系和取舍质量的综合判断。"},
+      {t:"00:12:39", s:759, title:"AI 为什么做不好设计", act:"深讲", cls:"b-deep", why:"技术密度最高：四层论证", core:"设计缺少可自动评分的反馈回路，还同时要求新颖性与跨代码库的语义抽象。"},
+      {t:"00:17:17", s:1037, title:"设计流程已死又没死", act:"快讲", cls:"b-quick", why:"主题 1 在设计域的延伸；baby codebase 可借用", core:"流程没有消失，但探索代码与生产代码应明确分离，避免原型精致度伪装成进度。"},
+      {t:"00:21:37", s:1297, title:"角色塌缩与“平均位置”论", act:"深讲", cls:"b-deep", why:"对“人人都是 builder”的重要反驳", core:"角色边界在变模糊，但专业重心和学科积累仍然存在；塌掉的是围栏，不是专业。"},
+      {t:"00:27:18", s:1638, title:"团队构成、zone defense 与招聘", act:"快讲", cls:"b-quick", why:"偏内部组织细节，可迁移性中等", core:"跨职能团队像区域联防：成员可以越界补位，但仍需有人对关键区域负责。"},
+      {t:"00:31:57", s:1917, title:"规划方法与模型时机决定成败", act:"深讲", cls:"b-deep", why:"全片最新颖：“发布六次”“too AGI-pilled”", core:"AI 产品的成败变量常是模型时机；不成熟功能应作为待重试资产，而不是永久失败。"},
+      {t:"00:40:00", s:2400, title:"Supervised vs unsupervised 代码", act:"快讲", cls:"b-quick", why:"好用的度量视角，一句话讲清", core:"需要人持续盯着的代码和可交给模型独立完成的代码，应采用不同质量与效率度量。"},
+      {t:"00:42:15", s:2535, title:"个人自动化工作流三案例", act:"原片", cls:"b-raw", why:"案例本身比转述有价值", core:"Daily brief、记忆和 Premiere 自动化展示 Codex 如何进入非编码的真实工作流。"},
+      {t:"00:49:17", s:2957, title:"浏览器形态的取舍", act:"摘要", cls:"b-sum", why:"产品内部权衡，对多数用户过细", core:"浏览器能力有价值，但产品形态仍受快捷键、Electron 和用户心智等约束。"},
+      {t:"00:52:02", s:3122, title:"Codex 与 ChatGPT 合并的逻辑", act:"快讲", cls:"b-quick", why:"解释标题问题：home base 模型", core:"Codex 应成为跨应用任务的 home base，而不是把所有专业工具塞进同一个窗口。"},
+      {t:"00:59:43", s:3583, title:"Fail corner：10–15 年失败史", act:"原片", cls:"b-raw", why:"个人故事，本人表达更有价值", core:"长期失败经历构成判断力来源，作者本人的叙述比二次摘要更有学习价值。"},
+      {t:"01:01:52", s:3712, title:"Lightning round", act:"跳过", cls:"b-skip", skip:true, why:"书影闲聊，无技术内容", core:"轻量个人问答，与课程核心机制关系较弱。"},
+      {t:"01:07:04", s:4024, title:"彩蛋：不要与流程结婚", act:"快讲", cls:"b-quick", why:"金句收尾", core:"忠于独特成果，而不是忠于已经熟悉、但可能过时的交付流程。"}
     ]
   }
 };
@@ -538,6 +550,7 @@ const COURSES = {
 const $ = id => document.getElementById(id);
 let player = null, playerReady = false, pendingSeek = null;
 let curMap = null;
+let subtitles = [], subtitlesOn = true;
 
 function parseVideoId(url){
   const m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/) || url.match(/^([\w-]{11})$/);
@@ -555,6 +568,7 @@ function loadCourse(vid){
   if(!data){ show("miss"); return; }
   curMap = data.map;
   renderMap(data.map);
+  loadSubtitles(vid);
   show("course");
   initPlayer(vid);
 }
@@ -579,6 +593,7 @@ function renderMap(map){
        <span class="ts">${m.t.slice(0,3)==='00:'?m.t.slice(3):m.t}</span>
        <span class="mt">${m.title}</span>
        <span class="badge ${m.cls}">${m.act}</span>
+       <span class="map-detail"><strong>核心：</strong>${m.core}<br><strong>价值：</strong>${m.why}</span>
      </li>`).join("");
   $("map-table-body").innerHTML = map.map(m =>
     `<tr class="${m.skip?'skip':''}">
@@ -599,19 +614,35 @@ function syncPlayback(){
   if(!playerReady || !player.getCurrentTime) return;
   const t = player.getCurrentTime();
   $("now-t").textContent = fmt(t);
+  renderSubtitle(t);
   const st = player.getPlayerState ? player.getPlayerState() : 1;
   if(st!==1 && st!==3) return;
   const i = segAt(t);
-  document.querySelectorAll("#map-list li").forEach(li=>{
-    li.classList.toggle("playing", +li.dataset.i===i);
-  });
+  document.querySelectorAll("#map-list li").forEach(li=>li.classList.toggle("playing", +li.dataset.i===i));
+  const active = document.querySelector(`#map-list li[data-i="${i}"]`);
+  if(active && !active.matches(":hover")) active.scrollIntoView({block:"nearest"});
 }
+async function loadSubtitles(vid){
+  try{subtitles=await fetch(`subtitles/${vid}.bilingual.json`).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})}
+  catch(e){subtitles=[];$("subtitle-toggle").textContent="字幕不可用";$("subtitle-toggle").disabled=true}
+}
+function renderSubtitle(t){
+  if(!subtitlesOn || !subtitles.length){$("subtitle-box").textContent="";return}
+  const cue=subtitles.find(c=>t>=c.start && t<c.end);
+  $("subtitle-box").innerHTML=cue?`<span class="subtitle-en"></span><span class="subtitle-zh"></span>`:"";
+  if(cue){$("subtitle-box").querySelector(".subtitle-en").textContent=cue.en;$("subtitle-box").querySelector(".subtitle-zh").textContent=cue.zh}
+}
+$("subtitle-toggle").addEventListener("click",()=>{
+  subtitlesOn=!subtitlesOn;
+  $("subtitle-toggle").textContent=subtitlesOn?"关闭双语字幕":"开启双语字幕";
+  if(!subtitlesOn) $("subtitle-box").textContent="";
+});
 function initPlayer(vid){
   if(player){ player.cueVideoById(vid); return; }
   const boot = () => {
     player = new YT.Player("yt-player", {
       videoId: vid,
-      playerVars: {rel:0, modestbranding:1},
+      playerVars: {rel:0, modestbranding:1, cc_load_policy:0},
       events: {
         onReady: () => {
           playerReady = true;
