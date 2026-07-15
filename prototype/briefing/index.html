@@ -164,7 +164,7 @@
     }
     function speakWithBrowser(text){
       if(!window.speechSynthesis){stopPlayback();$("play-status").textContent="浏览器不支持语音";return}
-      speechSynthesis.cancel();utterance=new SpeechSynthesisUtterance(text);utterance.lang="zh-CN";utterance.rate=Number($("speed").value);utterance.pitch=.95;utterance.onend=advanceSegment;utterance.onerror=event=>{if(event.error!=="canceled"){stopPlayback();$("play-status").textContent="语音播放失败"}};speechSynthesis.speak(utterance);
+      $("play-status").textContent="固定音频缺失 · 临时使用设备语音";speechSynthesis.cancel();utterance=new SpeechSynthesisUtterance(text);utterance.lang="zh-CN";utterance.rate=Number($("speed").value);utterance.pitch=.95;utterance.onend=advanceSegment;utterance.onerror=event=>{if(event.error!=="canceled"){stopPlayback();$("play-status").textContent="语音播放失败"}};speechSynthesis.speak(utterance);
     }
     function advanceSegment(){
       if(!playing)return;const item=currentItem();if(segmentIndex<item.spoken_segments.length-1){segmentIndex++;speakCurrent();return}if(itemIndex<batch.items.length-1){itemIndex++;segmentIndex=0;speakCurrent();return}stopPlayback();$("play-status").textContent="本批播放完成";$("progress").style.width="100%";
@@ -176,7 +176,7 @@
     }
     function showError(error){$("app").hidden=true;$("transport").hidden=true;$("error").hidden=false;$("error-message").textContent=`${error.message}。请重新生成内容包，或选择一个本地 briefing.json。`}
     async function boot(){
-      const query=new URLSearchParams(location.search),batchId=query.get("batch");const source=batchId?`../../local-data/briefing/${encodeURIComponent(batchId)}/briefing.json`:`../../tests/fixtures/briefing.json`;
+      const query=new URLSearchParams(location.search),batchId=query.get("batch");const source=batchId?`../../local-data/briefing/${encodeURIComponent(batchId)}/briefing.json`:"./briefing.json";
       try{const response=await fetch(source);if(!response.ok)throw Error(`读取内容包失败（HTTP ${response.status}）`);loadBatch(await response.json())}catch(error){showError(error)}
     }
     $("queue").addEventListener("click",event=>{const button=event.target.closest("[data-index]");if(button)selectItem(Number(button.dataset.index))});

@@ -21,9 +21,19 @@ def check_viewport(browser, width: int, height: int, screenshot: str) -> None:
     page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.add_init_script("""
+      window.__audioSources = [];
+      window.__speechCalls = 0;
+      window.Audio = class {
+        constructor(src) { this.src = src; window.__audioSources.push(src); }
+        play() { setTimeout(() => this.onended?.(), 90); return Promise.resolve(); }
+        pause() {}
+      };
       window.addEventListener('DOMContentLoaded', () => {
         window.speechSynthesis.cancel = () => {};
-        window.speechSynthesis.speak = utterance => setTimeout(() => utterance.onend?.(), 90);
+        window.speechSynthesis.speak = utterance => {
+          window.__speechCalls += 1;
+          setTimeout(() => utterance.onend?.(), 90);
+        };
       });
     """)
     page.goto(URL, wait_until="networkidle")
@@ -46,6 +56,20 @@ def check_viewport(browser, width: int, height: int, screenshot: str) -> None:
     page.wait_for_timeout(140)
     page.locator("#play").click()
     assert page.locator("#progress").evaluate("node => parseFloat(node.style.width) > 0")
+    assert page.evaluate("window.__speechCalls") == 0
+    assert page.evaluate("window.__audioSources[0].endsWith('audio/item-003-segment-01.mp3')")
+
+    audio_statuses = page.evaluate("""
+      async () => {
+        const batch = await (await fetch('./briefing.json')).json();
+        return Promise.all(batch.items.flatMap(item => item.spoken_segments).map(async segment => ({
+          path: segment.audio_file,
+          status: (await fetch(segment.audio_file)).status
+        })));
+      }
+    """)
+    assert len(audio_statuses) == 12
+    assert all(entry["path"] and entry["status"] == 200 for entry in audio_statuses)
 
     page.set_input_files("#file", str(FIXTURE))
     page.wait_for_timeout(100)

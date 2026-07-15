@@ -55,7 +55,7 @@ python3 tools/serve_local.py --port 8737
 # → http://localhost:8737/prototype/briefing/
 ```
 
-页面默认加载仓库内的市场扫描 fixture；也可以点击“导入内容包”选择本地 `briefing.json`。没有预生成 MP3 时使用浏览器中文语音逐句播放；需要生成并缓存本地 MP3 时运行：
+页面默认加载仓库内的市场扫描样例及固定音频；也可以点击“导入内容包”选择本地 `briefing.json`。默认播报使用 `zh-CN-XiaoxiaoNeural / +4% / -2Hz` 的暖声线，避免不同手机的系统语音产生机械音。导入内容没有预生成 MP3 时才临时降级到浏览器中文语音，并在播放状态中明确提示。需要为本地内容生成并缓存 MP3 时运行：
 
 ```bash
 python3 tools/briefing_pipeline.py \
