@@ -254,6 +254,13 @@
 
 - [x] 核对工作区差异与发布范围 → 验证：所有待提交文件都能追溯到已记录任务
 - [x] 运行资讯速听、中文播放及现有课程核心测试 → 验证：测试全部通过
-- [ ] 提交并推送现有 GitHub 仓库 → 验证：远端 commit 与本地 HEAD 一致
-- [ ] 等待并检查 GitHub Pages → 验证：手机可访问 `/briefing/`
-- [ ] 补充 Review，记录提交、地址、验证结果与已知边界
+- [x] 提交并推送现有 GitHub 仓库 → 验证：远端 commit 与本地 HEAD 一致
+- [x] 等待并检查 GitHub Pages → 验证：手机可访问 `/briefing/`
+- [x] 补充 Review，记录提交、地址、验证结果与已知边界
+
+### Review
+
+- 功能提交：`ecf12aa`，已推送到 `origin/main`；GitHub Pages 工作流 `29406695277` 完成且结论为 `success`。
+- 公网地址：`https://lmr1123.github.io/ai-video-course/briefing/`，部署后返回 HTTP 200，线上文件长度与本地原型一致。
+- 验证：资讯速听、课程生成、中文播放共 21 项单元测试通过；Python、内嵌 JavaScript、gitignore 与 diff 检查通过；桌面 1280×900 和手机 390×844 浏览器回归通过。
+- 发布边界：仓库只包含代码、fixture 和方案；真实第三方字幕、译文及中文音轨仍保存在被忽略的 `local-data/`，不会随 Pages 发布。
