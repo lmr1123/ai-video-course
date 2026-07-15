@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "video_id": "P3KDebPTUrw",
+  "source_url": "https://youtu.be/P3KDebPTUrw",
+  "source_title": "Dubbing fixture",
+  "channel": "Test channel",
+  "video_duration": 1200,
+  "segment_start": 120,
+  "segment_end": 132,
+  "speakers": [
+    {
+      "speaker_id": "host",
+      "label": "主持人",
+      "voice": "zh-CN-YunxiNeural",
+      "rate": "+2%",
+      "pitch": "-4Hz"
+    },
+    {
+      "speaker_id": "guest",
+      "label": "嘉宾",
+      "voice": "zh-CN-YunxiNeural",
+      "rate": "-2%",
+      "pitch": "-10Hz"
+    }
+  ],
+  "model": "fixture",
+  "cues": [
+    {
+      "cue_id": "cue-0001",
+      "start": 120,
+      "end": 126,
+      "source_text": "Implementation is becoming cheaper.",
+      "zh_spoken": "实现正在变得更便宜。",
+      "terms": [],
+      "speaker_id": "host",
+      "audio_file": "audio/cue-0001.mp3",
+      "audio_duration": 2.2,
+      "status": "ready"
+    },
+    {
+      "cue_id": "cue-0002",
+      "start": 126,
+      "end": 132,
+      "source_text": "The difficult part is making the right decision.",
+      "zh_spoken": "真正困难的是做出正确判断。",
+      "terms": [],
+      "speaker_id": "guest",
+      "audio_file": "audio/cue-0002.mp3",
+      "audio_duration": 2.8,
+      "status": "ready"
+    }
+  ]
+}

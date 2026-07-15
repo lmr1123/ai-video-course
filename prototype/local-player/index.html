@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="在本地播放与 YouTube 原画同步的 AI 中文翻译音轨">
+<title>本地中文播放 · AI Video Course</title>
+<style>
+:root{--paper:#f5f1e8;--card:#fffdf8;--ink:#20201e;--soft:#6d6961;--line:#d8d1c4;--accent:#a8432d;--dark:#161616}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif}
+button,select{font:inherit}.shell{width:min(1180px,calc(100% - 40px));margin:0 auto;padding:26px 0 50px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:18px}.brand{font-weight:800}.brand em{color:var(--accent);font-style:normal}.meta{text-align:right;color:var(--soft);font-size:12px}.meta strong{display:block;color:var(--ink);font-size:14px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px}.stage,.panel{min-width:0;background:var(--card);border:1px solid var(--line)}
+.video{position:relative;min-width:0;aspect-ratio:16/9;background:#000;overflow:hidden}.video>div,.video iframe{position:absolute;inset:0;width:100%;height:100%}.notice{padding:9px 14px;background:#232323;color:#ddd;font-size:12px;display:flex;justify-content:space-between;gap:12px}.notice b{color:#fff}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--line)}button,.select{border:1px solid var(--line);background:#fff;padding:7px 11px;border-radius:5px;color:var(--ink);cursor:pointer}button:hover{border-color:#9e9588}button:focus-visible,select:focus-visible{outline:3px solid #dcae9f;outline-offset:2px}.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}.mode.on{background:#272521;color:#fff;border-color:#272521}.spacer{flex:1}.time{font:12px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--soft);font-variant-numeric:tabular-nums}
+.captions{min-height:112px;padding:14px 18px;border-top:1px solid var(--line)}.speaker{display:inline-block;margin-bottom:5px;color:var(--accent);font-size:12px;font-weight:700}.zh{font-size:18px;font-weight:700}.en{margin-top:7px;color:var(--soft);font-size:13px}.en[hidden],.zh[hidden]{display:none}.term{color:var(--accent);font-size:12px;margin-top:8px}.empty{color:var(--soft);font-weight:400}
+.panel{padding:18px}.panel h1{overflow-wrap:anywhere;font:700 25px/1.25 Georgia,"Songti SC",serif;margin:0 0 8px}.panel p{color:var(--soft);margin:0 0 18px}.range{padding:12px;background:#f0ebe2;border-radius:6px;margin-bottom:18px}.range b{display:block}.timeline{list-style:none;margin:0;padding:0;max-height:540px;overflow:auto}.timeline li{border-top:1px solid var(--line);padding:10px 4px;cursor:pointer}.timeline li.playing{color:var(--accent)}.timeline time{display:block;font:11px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--soft)}.timeline span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.status{padding:30px;text-align:center;color:var(--soft)}
+@media(max-width:850px){.shell{width:min(100% - 20px,700px);padding-top:14px}header{align-items:flex-start}.layout{grid-template-columns:1fr}.panel{order:2}.timeline{max-height:300px}.controls{padding:10px}.captions{min-height:100px}.zh{font-size:16px}.meta{display:none}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <header><div class="brand">AI Video Course · <em>本地中文播放</em></div><div class="meta"><strong id="source-title">正在加载本地产物…</strong><span id="source-channel"></span></div></header>
+  <div id="error" class="stage status" hidden></div>
+  <div class="layout" id="app" hidden>
+    <section class="stage">
+      <div class="video"><div id="yt-player"></div></div>
+      <div class="notice"><span><b>AI 中文翻译音轨</b> · 仅保存在本机</span><span id="sync-status">等待播放</span></div>
+      <div class="controls">
+        <button class="primary" id="play" type="button">▶ 播放</button>
+        <button class="mode on" data-mode="zh" type="button">中文</button>
+        <button class="mode" data-mode="original" type="button">原声</button>
+        <button id="verify" type="button">核对原话</button>
+        <button id="captions-toggle" type="button">关闭字幕</button>
+        <label class="select">速度 <select id="speed"><option>0.75</option><option selected>1</option><option>1.25</option><option>1.5</option><option>2</option></select></label>
+        <span class="spacer"></span><span class="time" id="time">00:00 / 00:00</span>
+      </div>
+      <div class="captions">
+        <div class="speaker" id="speaker"></div>
+        <div class="zh empty" id="zh">播放后显示当前中文句</div>
+        <div class="en" id="en" hidden></div>
+        <div class="term" id="terms"></div>
+      </div>
+    </section>
+    <aside class="panel">
+      <h1 id="title"></h1><p>原片画面由 YouTube 官方播放器提供；中文音轨读取本机文件。</p>
+      <div class="range"><b id="range"></b><span id="cue-count"></span></div>
+      <ol class="timeline" id="timeline"></ol>
+    </aside>
+  </div>
+</main>
+<script>
+const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),videoId=params.get("id");
+let manifest=null,player=null,playerReady=false,mode="zh",beforeVerify="zh",verifying=false,captionsOn=true,speakerLabels={};
+let activeIndex=-1,audio=null,audioFit=1,timer=null;
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=s=>{s=Math.max(0,Math.floor(s));return `${String(Math.floor(s/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`};
+function fail(message){$("error").hidden=false;$("error").innerHTML=`<b>无法打开中文音轨</b><br>${esc(message)}`;$("app").hidden=true}
+async function load(){
+  if(!videoId||!/^[\w-]{11}$/.test(videoId))return fail("地址缺少有效的 ?id=VIDEO_ID");
+  try{const r=await fetch(`../../local-data/${videoId}/dubbing.json`);if(!r.ok)throw Error(`未找到 local-data/${videoId}/dubbing.json`);manifest=await r.json()}
+  catch(e){return fail(`${e.message}。请先运行中文音轨生成命令，并从项目根目录启动本地服务器。`)}
+  $("app").hidden=false;$("source-title").textContent=manifest.source_title;$("source-channel").textContent=manifest.channel||"";$("title").textContent=manifest.source_title;
+  const labels=Object.fromEntries(manifest.speakers.map(s=>[s.speaker_id,s.label]));speakerLabels=labels;
+  $("range").textContent=`验证片段 ${fmt(manifest.segment_start)}—${fmt(manifest.segment_end)}`;$("cue-count").textContent=`${manifest.cues.length} 条语义句 · ${manifest.speakers.map(s=>`${s.label}：${s.voice.replace('zh-CN-','').replace('Neural','')}`).join(' · ')}`;
+  $("timeline").innerHTML=manifest.cues.map((c,i)=>`<li data-i="${i}"><time>${fmt(c.start)}—${fmt(c.end)} · ${esc(labels[c.speaker_id])}</time><span>${esc(c.zh_spoken)}</span></li>`).join("");
+  initYouTube();
+}
+function initYouTube(){
+  const boot=()=>player=new YT.Player("yt-player",{videoId,playerVars:{rel:0,modestbranding:1,cc_load_policy:0,start:Math.floor(manifest.segment_start)},events:{
+    onReady:()=>{playerReady=true;player.seekTo(manifest.segment_start,true);player.mute();disableNativeCaptions();timer=setInterval(sync,200)},
+    onApiChange:()=>{if(mode==="zh")disableNativeCaptions()},
+    onStateChange:e=>{$("play").textContent=e.data===YT.PlayerState.PLAYING?"⏸ 暂停":"▶ 播放";if(e.data!==YT.PlayerState.PLAYING&&audio)audio.pause()}
+  }});
+  if(window.YT&&YT.Player)boot();else{window.onYouTubeIframeAPIReady=boot;const s=document.createElement("script");s.src="https://www.youtube.com/iframe_api";document.head.appendChild(s)}
+}
+function disableNativeCaptions(){try{player.unloadModule("captions")}catch(e){}}
+function cueIndexAt(t){let lo=0,hi=manifest.cues.length-1;while(lo<=hi){const m=(lo+hi)>>1,c=manifest.cues[m];if(t<c.start)hi=m-1;else if(t>=c.end)lo=m+1;else return m}return -1}
+function audioUrl(cue){return `../../local-data/${videoId}/${cue.audio_file}`}
+function stopAudio(){if(audio){audio.pause();audio=null}audioFit=1}
+function startCue(index,t,shouldPlay){
+  stopAudio();activeIndex=index;if(index<0)return;
+  const cue=manifest.cues[index];audio=new Audio(audioUrl(cue));audio.preload="auto";
+  audio.addEventListener("loadedmetadata",()=>{audioFit=Math.min(1.35,Math.max(.75,audio.duration/(cue.end-cue.start)));audio.playbackRate=audioFit*playbackSpeed();audio.currentTime=Math.min(audio.duration-.02,Math.max(0,(t-cue.start)*audioFit));if(shouldPlay&&mode==="zh")audio.play().catch(()=>{$("sync-status").textContent="请点击播放以启用本地音频"})},{once:true});
+  audio.addEventListener("error",()=>{$("sync-status").textContent=`缺少 ${cue.audio_file}，已切回原声`;setMode("original")},{once:true});
+}
+function playbackSpeed(){return playerReady&&player.getPlaybackRate?player.getPlaybackRate():1}
+function sync(){
+  if(!playerReady||!manifest)return;const t=player.getCurrentTime(),state=player.getPlayerState(),i=cueIndexAt(t),playing=state===YT.PlayerState.PLAYING;
+  $("time").textContent=`${fmt(t)} / ${fmt(manifest.segment_end)}`;renderCue(i);
+  if(t>=manifest.segment_end&&playing){player.pauseVideo();stopAudio();$("sync-status").textContent="验证片段播放完成";return}
+  if(mode!=="zh"){stopAudio();activeIndex=i;$("sync-status").textContent=verifying?"正在核对原话":"原声播放";return}
+  player.mute();if(i!==activeIndex)startCue(i,t,playing);
+  if(!audio){$("sync-status").textContent=i<0?"片段外无中文音轨":"载入中文音轨";return}
+  if(audio.readyState>=1){const cue=manifest.cues[i],expected=(t-cue.start)*audioFit,drift=Math.abs(audio.currentTime-expected);audio.playbackRate=audioFit*playbackSpeed();if(drift>.4)audio.currentTime=Math.min(audio.duration-.02,Math.max(0,expected));if(playing&&audio.paused)audio.play().catch(()=>{});if(!playing&&!audio.paused)audio.pause();$("sync-status").textContent=drift>.4?"已重新同步":"中文音轨同步"}
+}
+function renderCue(i){
+  document.querySelectorAll("#timeline li").forEach((li,n)=>li.classList.toggle("playing",n===i));
+  if(i<0){$("speaker").textContent="";$("zh").textContent="当前时间不在已生成的中文片段内";$("zh").classList.add("empty");$("en").textContent="";$("terms").textContent="";return}
+  const cue=manifest.cues[i];$("speaker").textContent=speakerLabels[cue.speaker_id];$("zh").textContent=cue.zh_spoken;$("zh").classList.remove("empty");$("en").textContent=cue.source_text;$("en").hidden=!(captionsOn&&verifying);$("terms").textContent=cue.terms?.length?`术语：${cue.terms.join(" · ")}`:"";
+  const li=document.querySelector(`#timeline li[data-i="${i}"]`);if(li&&!li.matches(":hover"))li.scrollIntoView({block:"nearest"});
+}
+function setMode(next){
+  mode=next;verifying=false;document.querySelectorAll(".mode").forEach(b=>b.classList.toggle("on",b.dataset.mode===mode));$("verify").textContent="核对原话";
+  if(!playerReady)return;if(mode==="zh"){player.mute();disableNativeCaptions();activeIndex=-1}else{stopAudio();player.unMute()}sync();
+}
+$("play").addEventListener("click",()=>{if(!playerReady)return;let t=player.getCurrentTime();if(t<manifest.segment_start||t>=manifest.segment_end)t=manifest.segment_start;if(player.getPlayerState()===YT.PlayerState.PLAYING)player.pauseVideo();else{if(mode==="zh"){player.mute();activeIndex=-1}else player.unMute();if(player.getPlayerState()===YT.PlayerState.UNSTARTED)player.loadVideoById({videoId,startSeconds:t});else{player.seekTo(t,true);player.playVideo()}sync()}});
+document.querySelectorAll(".mode").forEach(b=>b.addEventListener("click",()=>setMode(b.dataset.mode)));
+$("verify").addEventListener("click",()=>{if(!playerReady)return;if(!verifying){beforeVerify=mode;verifying=true;mode="original";stopAudio();player.unMute();$("verify").textContent="返回中文";$("en").hidden=false;document.querySelectorAll(".mode").forEach(b=>b.classList.remove("on"))}else setMode(beforeVerify);sync()});
+$("captions-toggle").addEventListener("click",()=>{captionsOn=!captionsOn;$("captions-toggle").textContent=captionsOn?"关闭字幕":"开启字幕";$("zh").hidden=!captionsOn;$("en").hidden=!(captionsOn&&verifying)});
+$("speed").addEventListener("change",()=>{if(playerReady)player.setPlaybackRate(Number($("speed").value));if(audio)audio.playbackRate=audioFit*Number($("speed").value)});
+$("timeline").addEventListener("click",e=>{const li=e.target.closest("li");if(!li||!playerReady)return;player.seekTo(manifest.cues[Number(li.dataset.i)].start,true);activeIndex=-1;sync()});
+load();
+</script>
+</body>
+</html>

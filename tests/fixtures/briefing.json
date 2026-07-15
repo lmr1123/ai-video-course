@@ -1,0 +1,215 @@
+{
+  "version": 1,
+  "batch_id": "market-scan-demo",
+  "title": "多源资讯速听 · 市场扫描",
+  "generated_at": "2026-07-15T10:00:00+08:00",
+  "language": "zh-CN",
+  "sources": [
+    {
+      "source_id": "source-particle",
+      "kind": "web",
+      "title": "Particle for Android",
+      "url": "https://particle.news/android",
+      "author": "Particle",
+      "published_at": "2026-02",
+      "extraction_status": "complete"
+    },
+    {
+      "source_id": "source-reader",
+      "kind": "web",
+      "title": "What is Readwise Reader?",
+      "url": "https://docs.readwise.io/reader/docs",
+      "author": "Readwise",
+      "published_at": "",
+      "extraction_status": "complete"
+    },
+    {
+      "source_id": "source-notebooklm",
+      "kind": "web",
+      "title": "NotebookLM adds audio and YouTube support",
+      "url": "https://blog.google/innovation-and-ai/products/notebooklm-audio-video-sources/",
+      "author": "Google",
+      "published_at": "2024-09-26",
+      "extraction_status": "complete"
+    },
+    {
+      "source_id": "source-horizon",
+      "kind": "web",
+      "title": "Horizon · AI-powered news radar",
+      "url": "https://github.com/Thysrael/Horizon#features",
+      "author": "Thysrael",
+      "published_at": "",
+      "extraction_status": "complete"
+    }
+  ],
+  "items": [
+    {
+      "item_id": "item-001",
+      "title": "Particle 已把新闻摘要做成连续音频队列",
+      "content_type": "product",
+      "event_cluster_id": "particle-audio-queue",
+      "source_ids": ["source-particle"],
+      "essence": "Particle 把多来源新闻摘要和 Audio Queue 放进同一个消费流程。",
+      "spoken_segments": [
+        {
+          "segment_id": "segment-01",
+          "text": "第一条。Particle 已经把多来源新闻摘要和连续音频队列放进同一个产品。",
+          "kind": "fact",
+          "attribution": "source",
+          "source_refs": [{"source_id": "source-particle", "label": "官方产品页 · Audio queue", "anchor_kind": "paragraph", "locator": "Audio queue", "url": "https://particle.news/android"}],
+          "audio_file": null,
+          "audio_duration": null
+        },
+        {
+          "segment_id": "segment-02",
+          "text": "它证明用户愿意用听的方式快速消费一批新闻，而不是逐篇打开。",
+          "kind": "inference",
+          "attribution": "AI",
+          "source_refs": [{"source_id": "source-particle", "label": "官方产品页 · 产品形态", "anchor_kind": "paragraph", "locator": "For You / Audio queue", "url": "https://particle.news/android"}],
+          "audio_file": null,
+          "audio_duration": null
+        },
+        {
+          "segment_id": "segment-03",
+          "text": "但它主要处理平台聚合的公共新闻，并不是用户自己的邮件、文件和任意内容收件箱。",
+          "kind": "inference",
+          "attribution": "AI",
+          "source_refs": [{"source_id": "source-particle", "label": "官方产品页 · 输入边界", "anchor_kind": "paragraph", "locator": "Personalized news", "url": "https://particle.news/android"}],
+          "audio_file": null,
+          "audio_duration": null
+        }
+      ],
+      "why_it_matters": "最接近目标消费体验，但个人多源投递仍是空白。",
+      "caveats": ["产品页不能证明其内部摘要准确率"],
+      "suggested_action": "save",
+      "action_reason": "保留为连续音频交互基线。",
+      "course_url": null
+    },
+    {
+      "item_id": "item-002",
+      "title": "Readwise Reader 的多源入口最完整",
+      "content_type": "product",
+      "event_cluster_id": "reader-unified-inbox",
+      "source_ids": ["source-reader"],
+      "essence": "Reader 已能把文章、newsletter、PDF、视频和 tweet 放进统一阅读环境。",
+      "spoken_segments": [
+        {
+          "segment_id": "segment-01",
+          "text": "第二条。Readwise Reader 已经覆盖文章、newsletter、PDF、视频和 tweet 等多种输入。",
+          "kind": "fact",
+          "attribution": "source",
+          "source_refs": [{"source_id": "source-reader", "label": "Reader 官方文档 · 支持内容", "anchor_kind": "paragraph", "locator": "reading materials", "url": "https://docs.readwise.io/reader/docs"}],
+          "audio_file": null,
+          "audio_duration": null
+        },
+        {
+          "segment_id": "segment-02",
+          "text": "它更像一个统一阅读收件箱，强项是保存、标注和稍后阅读。",
+          "kind": "inference",
+          "attribution": "AI",
+          "source_refs": [{"source_id": "source-reader", "label": "Reader 官方文档 · 产品定位", "anchor_kind": "paragraph", "locator": "unified platform", "url": "https://docs.readwise.io/reader/docs"}],
+          "audio_file": null,
+          "audio_duration": null
+        },
+        {
+          "segment_id": "segment-03",
+          "text": "本方案的机会不是重做收件箱，而是把多条极短判断串成可以连续听的队列。",
+          "kind": "inference",
+          "attribution": "AI",
+          "source_refs": [{"source_id": "source-reader", "label": "Reader 官方文档 · 能力边界", "anchor_kind": "paragraph", "locator": "highlight and annotate", "url": "https://docs.readwise.io/reader/docs"}],
+          "audio_file": null,
+          "audio_duration": null
+        }
+      ],
+      "why_it_matters": "验证了多源收件箱需求，但摘要音频判断流仍未闭环。",
+      "caveats": ["Reader 功能持续更新，具体音频能力需以当前文档为准"],
+      "suggested_action": "save",
+      "action_reason": "作为输入层和信息组织参考。",
+      "course_url": null
+    },
+    {
+      "item_id": "item-003",
+      "title": "NotebookLM 强在多源归纳与引用",
+      "content_type": "product",
+      "event_cluster_id": "notebooklm-grounded-audio",
+      "source_ids": ["source-notebooklm"],
+      "essence": "NotebookLM 支持网页、PDF、YouTube 和音频，并让回答基于用户提供的来源。",
+      "spoken_segments": [
+        {
+          "segment_id": "segment-01",
+          "text": "第三条。NotebookLM 可以接收网页、PDF、公开 YouTube 和音频等来源。",
+          "kind": "fact",
+          "attribution": "source",
+          "source_refs": [{"source_id": "source-notebooklm", "label": "Google 官方博客 · 新来源类型", "anchor_kind": "paragraph", "locator": "New source types", "url": "https://blog.google/innovation-and-ai/products/notebooklm-audio-video-sources/"}],
+          "audio_file": null,
+          "audio_duration": null
+        },
+        {
+          "segment_id": "segment-02",
+          "text": "它的优势是回答和归纳基于用户提供的来源，并能回到相关引用。",
+          "kind": "fact",
+          "attribution": "source",
+          "source_refs": [{"source_id": "source-notebooklm", "label": "Google 官方博客 · 来源引用", "anchor_kind": "paragraph", "locator": "inline citations", "url": "https://blog.google/innovation-and-ai/products/notebooklm-audio-video-sources/"}],
+          "audio_file": null,
+          "audio_duration": null
+        },
+        {
+          "segment_id": "segment-03",
+          "text": "但多个来源通常会被合成为一个 Audio Overview，不天然保留每条资讯的独立决策动作。",
+          "kind": "inference",
+          "attribution": "AI",
+          "source_refs": [{"source_id": "source-notebooklm", "label": "Google 官方博客 · Audio Overview", "anchor_kind": "paragraph", "locator": "Audio Overview", "url": "https://blog.google/innovation-and-ai/products/notebooklm-audio-video-sources/"}],
+          "audio_file": null,
+          "audio_duration": null
+        }
+      ],
+      "why_it_matters": "来源约束和引用是可信提炼的直接基线。",
+      "caveats": ["音频中的每一句是否绑定细粒度引用，官方页面没有明确承诺"],
+      "suggested_action": "open",
+      "action_reason": "进一步比较引用交互。",
+      "course_url": null
+    },
+    {
+      "item_id": "item-004",
+      "title": "Horizon 提供了开源采集和去重骨架",
+      "content_type": "product",
+      "event_cluster_id": "horizon-open-source-radar",
+      "source_ids": ["source-horizon"],
+      "essence": "Horizon 已实现多源采集、去重、评分、补充背景和双语简报。",
+      "spoken_segments": [
+        {
+          "segment_id": "segment-01",
+          "text": "第四条。开源项目 Horizon 已经支持 RSS、Reddit、Telegram、X 和 GitHub 等来源。",
+          "kind": "fact",
+          "attribution": "source",
+          "source_refs": [{"source_id": "source-horizon", "label": "Horizon README · Supported Sources", "anchor_kind": "paragraph", "locator": "Supported Sources", "url": "https://github.com/Thysrael/Horizon#supported-sources"}],
+          "audio_file": null,
+          "audio_duration": null
+        },
+        {
+          "segment_id": "segment-02",
+          "text": "它还包含去重、AI 评分、背景补充和中英双语 briefing。",
+          "kind": "fact",
+          "attribution": "source",
+          "source_refs": [{"source_id": "source-horizon", "label": "Horizon README · Features", "anchor_kind": "paragraph", "locator": "Features", "url": "https://github.com/Thysrael/Horizon#features"}],
+          "audio_file": null,
+          "audio_duration": null
+        },
+        {
+          "segment_id": "segment-03",
+          "text": "适合借鉴采集和编排，但不应直接拿来替代手工多模态收件箱与连续语音播放器。",
+          "kind": "inference",
+          "attribution": "AI",
+          "source_refs": [{"source_id": "source-horizon", "label": "Horizon README · 输出能力", "anchor_kind": "paragraph", "locator": "How It Works", "url": "https://github.com/Thysrael/Horizon#how-it-works"}],
+          "audio_file": null,
+          "audio_duration": null
+        }
+      ],
+      "why_it_matters": "可以减少后续自动订阅阶段的重复工程。",
+      "caveats": ["首轮验证不应提前引入整套采集系统"],
+      "suggested_action": "deepen",
+      "action_reason": "验证通过后再评估模块级复用。",
+      "course_url": null
+    }
+  ]
+}

@@ -1,6 +1,9 @@
 # 导出产物（可由 tools/build_export.py 重新生成）
 export/
 
+# 用户本地生成的第三方字幕、译文与中文音轨
+local-data/
+
 # 本地备份
 prototype/*.bak-*
 
