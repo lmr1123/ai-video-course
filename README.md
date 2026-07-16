@@ -84,7 +84,9 @@ python3 tools/install_mail_briefing_schedule.py --dry-run  # 先检查 plist
 python3 tools/install_mail_briefing_schedule.py            # 写入并加载 LaunchAgent
 ```
 
-日志写入 `local-data/briefing/logs/`。每次成功生成使用独立批次目录，失败或没有新邮件不会覆盖上一批。腾讯云部署只同步播放器、`briefing.json` 和 MP3；示例 Caddy/Cloudflare Tunnel 配置位于 `deploy/tencent-cloud/`。当前仓库和 GitHub Pages 是公开的，禁止把 `local-data/`、`.env`、邮箱正文或自动生成简报提交到仓库。
+日志写入 `local-data/briefing/logs/`。每次成功生成使用独立批次目录，失败或没有新邮件不会覆盖上一批。腾讯云部署只同步播放器、`briefing.json` 和 MP3；Caddy 仅监听本机，手机 HTTPS 入口由 Tailscale Funnel/Serve 转发到 `127.0.0.1:8792`。当前仓库和 GitHub Pages 是公开的，禁止把 `local-data/`、`.env`、邮箱正文或自动生成简报提交到仓库。
+
+腾讯云首次连接使用 `sudo tailscale up --hostname=ai-briefing`，授权后运行 `sudo tailscale funnel --bg --yes http://127.0.0.1:8792`。若所在网络无法访问 Funnel 公网边缘，手机安装 Tailscale 并登录同一账号后仍可通过相同 `*.ts.net` HTTPS 地址访问已验证的私有链路。
 
 ## 自动生成课程
 

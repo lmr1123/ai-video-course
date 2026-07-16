@@ -1,6 +1,6 @@
-# 复制到服务器 /etc/caddy/conf.d/briefing.caddy，再用配套 systemd 服务建立 HTTPS Quick Tunnel。
-# 用 `caddy hash-password --plaintext '强随机密码'` 生成密码哈希。
-http://127.0.0.1:8792 {
+# 仅监听本机，但接受 Tunnel/Serve 保留的公网 Host。
+# 复制到 /etc/caddy/conf.d/briefing.caddy；用 `caddy hash-password --plaintext '强随机密码'` 生成密码哈希。
+http://:8792 {
 	bind 127.0.0.1
 	encode gzip
 
