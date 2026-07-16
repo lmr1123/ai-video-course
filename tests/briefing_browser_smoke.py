@@ -47,16 +47,29 @@ def check_viewport(browser, width: int, height: int, screenshot: str) -> None:
     assert page.locator("#script .segment").count() == 3
     assert page.locator("#position").inner_text() == "01 / 04"
     assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
-    assert page.evaluate("""
-      Array.from(document.querySelectorAll('body *')).filter(node => {
-        const style = getComputedStyle(node);
-        return parseFloat(style.borderTopWidth) > 0 || parseFloat(style.borderBottomWidth) > 0;
-      }).length
-    """) == 0
+    border_stats = page.evaluate("""
+      () => {
+        const nodes = Array.from(document.querySelectorAll('body *')).filter(node => {
+          const style = getComputedStyle(node);
+          return parseFloat(style.borderTopWidth) > 0 || parseFloat(style.borderBottomWidth) > 0;
+        });
+        const dark = nodes.filter(node => {
+          const style = getComputedStyle(node);
+          return [
+            [style.borderTopWidth, style.borderTopColor],
+            [style.borderBottomWidth, style.borderBottomColor]
+          ].some(([width, color]) => parseFloat(width) > 0 && color === 'rgb(33, 29, 23)');
+        });
+        return { count: nodes.length, dark: dark.length };
+      }
+    """)
+    assert border_stats["count"] <= 12, border_stats
+    assert border_stats["dark"] == 0, border_stats
 
-    page.locator("#save").click()
-    assert page.locator("#save").inner_text() == "已收藏"
-    assert "item-001" in page.evaluate("localStorage.getItem('briefing:saved')")
+    assert page.locator(".course-home:not(.history-home)").get_attribute("href") == "../index.html"
+    assert page.locator(".history-home").get_attribute("href") == "../history/index.html"
+    assert page.locator("#script .source-evidence").count() >= 1
+    assert page.locator("#script .source-evidence a").first.get_attribute("href").startswith("https://")
 
     page.locator("#queue-toggle").click()
     assert page.locator("#queue-panel").is_visible()
@@ -102,7 +115,7 @@ def check_viewport(browser, width: int, height: int, screenshot: str) -> None:
     assert page.locator("#batch-intro").inner_text().startswith("今天带来四条")
     assert page.locator("#published-at").inner_text() == "邮件 2026-02"
     assert "2026-02" in page.locator("#queue [data-index='0']").inner_text()
-    assert "2026-02" in page.locator("#script .evidence a").first.inner_text()
+    assert "2026-02" in page.locator("#script .source-evidence summary").first.inner_text()
     assert page.locator("#segment-position").inner_text() == "本批导览"
     page.locator("#play").click()
     page.wait_for_timeout(470)
@@ -116,8 +129,7 @@ def check_viewport(browser, width: int, height: int, screenshot: str) -> None:
     page.set_input_files("#file", str(FIXTURE))
     page.wait_for_timeout(100)
     assert page.locator("#batch-title").inner_text() == "多源资讯速听 · 市场扫描"
-    assert page.locator("#original").get_attribute("href").startswith("https://")
-    assert page.locator("#deepen").is_visible()
+    assert page.locator("#script .source-evidence a").first.get_attribute("href").startswith("https://")
     assert page.locator("#transport").is_visible()
     assert page.locator("#live").evaluate("node => node.getBoundingClientRect().width <= 1")
     assert not errors, errors

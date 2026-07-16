@@ -20,6 +20,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
@@ -27,12 +28,31 @@ from pydantic import BaseModel, Field, model_validator
 
 try:
     from tools.course_pipeline import extract_video_id, run
+    from tools.model_runtime import (
+        add_attempt,
+        estimate_tokens_from_chars,
+        finish_ledger,
+        new_ledger,
+        stable_hash,
+        write_json_atomic,
+    )
 except ModuleNotFoundError:  # 直接运行 python3 tools/dubbing_pipeline.py
     from course_pipeline import extract_video_id, run
+    from model_runtime import (
+        add_attempt,
+        estimate_tokens_from_chars,
+        finish_ledger,
+        new_ledger,
+        stable_hash,
+        write_json_atomic,
+    )
 
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUTPUT = ROOT / "local-data"
+DEFAULT_MODEL_CACHE = ROOT / "local-data" / "model-cache" / "dubbing"
+DEFAULT_USAGE = ROOT / "local-data" / "usage" / "dubbing"
+DUBBING_PROMPT_VERSION = "dubbing-v1"
 
 
 class Translation(BaseModel):
@@ -84,6 +104,7 @@ class DubbingManifest(BaseModel):
     segment_end: float = Field(gt=0)
     speakers: list[SpeakerProfile] = Field(min_length=2, max_length=2)
     model: str
+    prompt_version: str = ""
     cues: list[DubbingCue] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -235,15 +256,16 @@ def normalize_dubbing_captions(
 
 
 def translate_cues(
-    cues: list[dict], model: str, source_title: str = "", batch_size: int = 35
+    cues: list[dict],
+    model: str,
+    source_title: str = "",
+    batch_size: int = 35,
+    *,
+    cache_root: Path = DEFAULT_MODEL_CACHE,
+    ledger: dict | None = None,
+    client=None,
 ) -> list[Translation]:
-    try:
-        from openai import OpenAI
-    except ImportError as exc:
-        raise RuntimeError("缺少 openai SDK，请运行：pip install -r requirements.txt") from exc
-    if not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError("缺少 OPENAI_API_KEY；密钥只应设置在本地环境变量")
-    client = OpenAI()
+    active_ledger = ledger if ledger is not None else new_ledger("dubbing", model, DUBBING_PROMPT_VERSION)
     output: list[Translation] = []
     instructions = """你是技术视频中文配音译者。把每条英文字幕翻译成自然、紧凑、适合朗读的简体中文。
 要求：
@@ -260,20 +282,86 @@ def translate_cues(
             "source_title": source_title,
             "cues": [{"cue_id": c["cue_id"], "seconds": round(c["end"] - c["start"], 1), "text": c["source_text"]} for c in batch],
         }
-        response = client.responses.parse(
-            model=model,
-            instructions=instructions,
-            input=json.dumps(payload, ensure_ascii=False),
-            text_format=TranslationBatch,
-            max_output_tokens=8000,
-        )
-        parsed = response.output_parsed
-        if parsed is None:
-            raise RuntimeError("模型没有返回可解析的中文配音稿")
+        serialized = json.dumps(payload, ensure_ascii=False)
+        cache_key = stable_hash({
+            "prompt_version": DUBBING_PROMPT_VERSION,
+            "model": model,
+            "instructions": instructions,
+            "payload": payload,
+        })
+        cache_path = cache_root / f"{cache_key}.json"
+        response = None
+        if cache_path.exists():
+            parsed = TranslationBatch.model_validate_json(cache_path.read_text(encoding="utf-8"))
+            active_ledger["cache_hits"] += 1
+        else:
+            active_ledger["cache_misses"] += 1
+            if client is None:
+                try:
+                    from openai import OpenAI
+                except ImportError as exc:
+                    raise RuntimeError("缺少 openai SDK，请运行：pip install -r requirements.txt") from exc
+                if not os.getenv("OPENAI_API_KEY"):
+                    raise RuntimeError("缺少 OPENAI_API_KEY；密钥只应设置在本地环境变量")
+                client = OpenAI()
+            try:
+                response = client.responses.parse(
+                    model=model,
+                    instructions=instructions,
+                    input=serialized,
+                    text_format=TranslationBatch,
+                    max_output_tokens=8000,
+                )
+            except Exception as exc:
+                add_attempt(
+                    active_ledger,
+                    unit=f"cues-{offset + 1}-{offset + len(batch)}",
+                    attempt=1,
+                    status="request_error",
+                    error=str(exc),
+                )
+                raise
+            parsed = response.output_parsed
+            if parsed is None:
+                add_attempt(
+                    active_ledger,
+                    unit=f"cues-{offset + 1}-{offset + len(batch)}",
+                    attempt=1,
+                    status="parse_error",
+                    usage=getattr(response, "usage", None),
+                    error="模型没有返回可解析的中文配音稿",
+                )
+                raise RuntimeError("模型没有返回可解析的中文配音稿")
+        active_ledger["estimated"].setdefault("input_chars", 0)
+        active_ledger["estimated"].setdefault("input_tokens", 0)
+        active_ledger["estimated"].setdefault("output_tokens", 0)
+        active_ledger["estimated"]["input_chars"] += len(instructions) + len(serialized)
+        active_ledger["estimated"]["input_tokens"] += estimate_tokens_from_chars(len(instructions) + len(serialized))
+        active_ledger["estimated"]["output_tokens"] += 8000
         expected = [c["cue_id"] for c in batch]
         received = [item.cue_id for item in parsed.translations]
         if received != expected:
+            if response is not None:
+                add_attempt(
+                    active_ledger,
+                    unit=f"cues-{offset + 1}-{offset + len(batch)}",
+                    attempt=1,
+                    status="validation_error",
+                    usage=getattr(response, "usage", None),
+                    error=f"翻译 cue_id 不匹配：期望 {expected[0]}…，实际 {received[:3]}",
+                )
+            else:
+                cache_path.unlink(missing_ok=True)
             raise RuntimeError(f"翻译 cue_id 不匹配：期望 {expected[0]}…，实际 {received[:3]}")
+        if response is not None:
+            add_attempt(
+                active_ledger,
+                unit=f"cues-{offset + 1}-{offset + len(batch)}",
+                attempt=1,
+                status="success",
+                usage=getattr(response, "usage", None),
+            )
+            write_json_atomic(cache_path, parsed.model_dump())
         output.extend(parsed.translations)
     return output
 
@@ -310,6 +398,7 @@ def build_manifest(
         segment_end=items[-1].end,
         speakers=speakers,
         model=model,
+        prompt_version=DUBBING_PROMPT_VERSION,
         cues=items,
     )
 
@@ -400,7 +489,7 @@ def load_cached_manifest(path: Path, cues: list[dict]) -> DubbingManifest | None
     return existing
 
 
-def generate(args: argparse.Namespace) -> tuple[DubbingManifest, Path]:
+def generate(args: argparse.Namespace, ledger: dict | None = None) -> tuple[DubbingManifest, Path]:
     metadata, caption_json = fetch_caption_json(args.url)
     video_id = extract_video_id(args.url)
     video_duration = float(metadata.get("duration") or math.inf)
@@ -412,12 +501,22 @@ def generate(args: argparse.Namespace) -> tuple[DubbingManifest, Path]:
     target.mkdir(parents=True, exist_ok=True)
     manifest_path = target / "dubbing.json"
     cached = load_cached_manifest(manifest_path, cues)
+    if cached is not None and (cached.model != args.model or cached.prompt_version != DUBBING_PROMPT_VERSION):
+        cached = None
     translations = None if cached is None else [
         Translation(cue_id=c.cue_id, zh_spoken=c.zh_spoken, terms=c.terms, speaker_id=c.speaker_id)
         for c in cached.cues
     ]
     if translations is None:
-        translations = translate_cues(cues, args.model, metadata.get("title", ""))
+        translations = translate_cues(
+            cues,
+            args.model,
+            metadata.get("title", ""),
+            cache_root=args.model_cache_root,
+            ledger=ledger,
+        )
+    elif ledger is not None:
+        ledger["cache_hits"] += 1
     overrides_path = target / "speaker-overrides.json"
     if not overrides_path.exists():
         write_json(overrides_path, {})
@@ -472,6 +571,8 @@ def main() -> None:
     parser.add_argument("--guest-pitch", default="-10Hz")
     parser.add_argument("--guest-rate", default="-2%")
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--model-cache-root", type=Path, default=DEFAULT_MODEL_CACHE)
+    parser.add_argument("--usage-root", type=Path, default=DEFAULT_USAGE)
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--skip-tts", action="store_true", help="只生成字幕和中文口语稿")
     parser.add_argument("--fixture", type=Path, help="离线校验并写入已有 dubbing manifest")
@@ -486,7 +587,16 @@ def main() -> None:
         write_json(target / "dubbing.json", manifest.model_dump())
         path = target / "dubbing.json"
     elif args.url:
-        manifest, path = generate(args)
+        ledger = new_ledger("dubbing", args.model, DUBBING_PROMPT_VERSION)
+        usage_path = args.usage_root / f"{datetime.now().astimezone().strftime('%Y%m%d-%H%M%S-%f')}.json"
+        try:
+            manifest, path = generate(args, ledger)
+            finish_ledger(ledger, "success")
+            write_json_atomic(usage_path, ledger)
+        except Exception as exc:
+            finish_ledger(ledger, "failed", str(exc))
+            write_json_atomic(usage_path, ledger)
+            raise
     else:
         parser.error("请提供 YouTube URL 或 --fixture")
     print(f"中文音轨已生成：{path}")

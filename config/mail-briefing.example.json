@@ -22,7 +22,12 @@
     "model": "deepseek-v4-flash",
     "max_items": 10,
     "max_items_per_email": 2,
-    "max_chars_per_email": 50000
+    "max_chars_per_email": 50000,
+    "max_candidate_emails": 10,
+    "max_model_calls_per_run": 10,
+    "max_total_input_chars": 200000,
+    "max_estimated_input_tokens": 100000,
+    "max_estimated_output_tokens": 50000
   },
   "tts": {
     "enabled": true,

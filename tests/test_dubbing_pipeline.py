@@ -11,14 +11,17 @@ from tools.dubbing_pipeline import (
     DubbingManifest,
     SpeakerProfile,
     Translation,
+    TranslationBatch,
     build_manifest,
     load_cached_manifest,
     load_speaker_overrides,
     normalize_dubbing_captions,
     parse_time,
     synthesize_audio,
+    translate_cues,
     write_json,
 )
+from tools.model_runtime import new_ledger
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -100,6 +103,54 @@ class DubbingPipelineTest(unittest.TestCase):
         self.assertIsNotNone(load_cached_manifest(FIXTURE, cues))
         cues[0]["source_text"] = "Changed source"
         self.assertIsNone(load_cached_manifest(FIXTURE, cues))
+
+    def test_translation_batches_are_cached_and_second_run_uses_zero_calls(self):
+        cues = [{"cue_id": "cue-0001", "start": 0, "end": 5, "source_text": "Hello API."}]
+        parsed = TranslationBatch(translations=[
+            Translation(cue_id="cue-0001", zh_spoken="你好，API。", terms=["API"], speaker_id="guest")
+        ])
+
+        class Responses:
+            def __init__(self):
+                self.calls = 0
+
+            def parse(self, **kwargs):
+                self.calls += 1
+                return types.SimpleNamespace(
+                    output_parsed=parsed,
+                    usage={"input_tokens": 30, "output_tokens": 10, "total_tokens": 40},
+                )
+
+        responses = Responses()
+        client = types.SimpleNamespace(responses=responses)
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_root = Path(tmp)
+            first = new_ledger("dubbing", "fixture", "v1")
+            translate_cues(cues, "fixture", cache_root=cache_root, ledger=first, client=client)
+            second = new_ledger("dubbing", "fixture", "v1")
+            translate_cues(cues, "fixture", cache_root=cache_root, ledger=second, client=client)
+            self.assertEqual(responses.calls, 1)
+            self.assertEqual(first["totals"]["total_tokens"], 40)
+            self.assertEqual(second["cache_hits"], 1)
+            self.assertEqual(second["totals"]["total_tokens"], 0)
+
+    def test_invalid_translation_ids_are_counted_but_not_cached(self):
+        cues = [{"cue_id": "cue-0001", "start": 0, "end": 5, "source_text": "Hello."}]
+        parsed = TranslationBatch(translations=[
+            Translation(cue_id="cue-9999", zh_spoken="你好。", terms=[], speaker_id="guest")
+        ])
+        client = types.SimpleNamespace(responses=types.SimpleNamespace(parse=lambda **kwargs: types.SimpleNamespace(
+            output_parsed=parsed,
+            usage={"input_tokens": 30, "output_tokens": 10, "total_tokens": 40},
+        )))
+        with tempfile.TemporaryDirectory() as tmp:
+            cache_root = Path(tmp)
+            ledger = new_ledger("dubbing", "fixture", "v1")
+            with self.assertRaisesRegex(RuntimeError, "cue_id 不匹配"):
+                translate_cues(cues, "fixture", cache_root=cache_root, ledger=ledger, client=client)
+            self.assertEqual(ledger["totals"]["total_tokens"], 40)
+            self.assertEqual(ledger["attempts"][0]["status"], "validation_error")
+            self.assertEqual(list(cache_root.glob("*.json")), [])
 
     def test_speaker_overrides_validate_ids_and_roles(self):
         with tempfile.TemporaryDirectory() as tmp:

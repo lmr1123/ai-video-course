@@ -6,7 +6,7 @@
 
 ## 当前阶段
 
-需求与学习流程验证阶段。首个真实视频课程、互动课程页和 AI 教师重讲课原型已经跑通，进展见 [tasks/progress.md](tasks/progress.md)。
+成本守门与学习流程验证阶段。资讯速听和视频课程均已有技术原型，但尚未按正式指标通过；当前状态与唯一下一门槛见 [tasks/current.md](tasks/current.md)，历史进展见 [tasks/progress.md](tasks/progress.md)。
 
 ## 在线体验
 
@@ -63,6 +63,16 @@ python3 tools/briefing_pipeline.py \
   --tts --serve
 ```
 
+生成成功后会写入 `local-data/history/`：一份 `index.json` 供网页历史读取，一份 Markdown 便于本地回看和核对来源。本地服务启动后打开 `http://localhost:8737/prototype/history/` 可查看视频课堂和资讯速听历史记录。需要临时关闭归档可加 `--no-archive`；历史 Markdown 的网页链接默认使用 `http://localhost:8737`，可用 `AI_VIDEO_COURSE_BASE_URL` 或 `--site-base-url` 改成公网地址。
+
+如果是 Gmail 生成的资讯速听，归档时应同时传入对应 mail-drop，才能在本地历史 Markdown 中保存完整邮件正文：
+
+```bash
+python3 tools/briefing_pipeline.py \
+  --fixture local-data/briefing/mail-daily-2026-07-16/briefing.json \
+  --mail-drop local-data/briefing/mail-inbox/2026-07-16-mail-drop.json
+```
+
 真实内容包和生成音频写入 `local-data/briefing/`，不会被 Git 跟踪或发布。正式范围、内容分型和验证协议见 [多源资讯速听模式方案](docs/多源资讯速听模式方案.md)。20 条首轮素材与裸读基线模板见 [资讯速听首轮验证](experiments/资讯速听首轮验证/素材与基线.md)。
 
 手工验证通过后，项目增加了本机私有的 Gmail 定时入口。复制配置模板并填写本地密钥：
@@ -77,7 +87,7 @@ python3 tools/mail_briefing_job.py --config local-data/briefing/config.json
 
 任务流程：`Gmail 白名单邮件 → 精确时间窗口过滤与去重 → DeepSeek 四段式提炼 → Pydantic/证据段落校验 → Edge TTS → 腾讯云私有站点`。DeepSeek 使用官方 OpenAI 兼容接口，默认模型为 `deepseek-v4-flash`；JSON 输出仍会经过本地 schema 和段落编号复核。邮件正文会发送给 DeepSeek 做提炼，最终摘要会发送给 Edge TTS；二者都不会进入 Git。
 
-`local-data/briefing/config.json` 可设置每日小时/分钟、时区、回看小时数、发件人、模型、最大条数、声线和部署目标。macOS 定时安装：
+`local-data/briefing/config.json` 可设置每日小时/分钟、时区、回看小时数、发件人、模型、最大条数、声线和部署目标。模型配置同时包含单次候选邮件数、模型调用数、总输入字符及估算输入/输出 Token 硬上限；超限会在创建模型客户端前终止。结构化结果按正文、模型和 prompt 版本缓存在 `local-data/briefing/model-cache/`，相同输入不会重复调用。每次成功或失败运行都会把估算、缓存命中、逐次重试及实际 Token 写入 `local-data/briefing/usage/`。macOS 定时安装：
 
 ```bash
 python3 tools/install_mail_briefing_schedule.py --dry-run  # 先检查 plist
@@ -98,7 +108,9 @@ python3 tools/course_pipeline.py "https://youtu.be/VIDEO_ID"
 
 流程：`YouTube URL → yt-dlp 英文字幕与元数据 → OpenAI Responses API 结构化课程 → 时间戳/schema 校验 → prototype/generated/`。默认模型为 `gpt-5.4`，可用 `OPENAI_MODEL` 或 `--model` 覆盖。
 
-生成成功后，本地打开 `http://localhost:8737/generated/viewer.html?id=VIDEO_ID`。提交 `prototype/generated/` 后，GitHub Pages 会自动发布；首页输入框也会通过 `manifest.json` 识别已生成课程。
+生成成功后，本地打开 `http://localhost:8737/prototype/generated/viewer.html?id=VIDEO_ID`。同一次生成也会进入 `local-data/history/`，可在历史页回看课程记录和本地 Markdown。提交 `prototype/generated/` 后，GitHub Pages 会自动发布；首页输入框也会通过 `manifest.json` 识别已生成课程。
+
+课程生成按字幕、模型和 prompt 版本缓存在 `local-data/model-cache/course/`；相同输入复用缓存。真实生成的成功、失败和 Token 用量写入 `local-data/usage/course/`。
 
 不调用 API 的离线回归：
 
@@ -128,5 +140,7 @@ python3 tools/dubbing_pipeline.py \
 流程：`YouTube URL → 英文短字幕 → OpenAI 中文口语翻译 → edge-tts 分句配音 → local-data/<video-id>/ → 本地同步播放器`。访谈默认用同一条自然声线区分角色：主持人 `Yunxi / -4Hz / +2%`，嘉宾 `Yunxi / -10Hz / -2%`；可通过 `--host-voice`、`--host-pitch`、`--host-rate` 及对应的 `--guest-*` 参数覆盖。`--serve` 只监听 `127.0.0.1`；按 `Ctrl+C` 停止。播放器支持中文/原声切换、核对原话、字幕开关、变速、拖动和时间线跳转。
 
 重新执行同一片段会复用已翻译的 manifest 和未变化的 MP3；角色或声音参数变化时会重生成音频。单条 TTS 遇到临时网络错误会有限重试，并只在新音频完整生成后替换旧缓存。音频超过原时间窗 1.35 倍时 CLI 会明确警告，需要压缩对应译文。只生成字幕和中文稿可加 `--skip-tts`。产品与产物边界见 [docs/中文播放模式方案.md](docs/中文播放模式方案.md)。
+
+中文翻译按 cue 批次、模型和 prompt 版本缓存在 `local-data/model-cache/dubbing/`；相同输入复用缓存，调用记录写入 `local-data/usage/dubbing/`。更换模型或 prompt 版本不会错误复用旧翻译 manifest。
 
 开源代码不等于自动获得第三方内容的再分发权，“个人技术分享”或“非商用”本身也不足以保证可以把合成音轨提交到公共仓库。默认只提交自有、明确授权或许可允许衍生和再分发的音轨；普通第三方 YouTube 视频生成的字幕和中文音轨留在 `local-data/`。参考 [YouTube 服务条款](https://www.youtube.com/static?template=terms)、[版权与衍生作品说明](https://support.google.com/youtube/answer/2797466)、[合理使用说明](https://support.google.com/youtube/answer/9783148) 与 [CC BY 说明](https://support.google.com/youtube/answer/2797468)。

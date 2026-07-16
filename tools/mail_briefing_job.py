@@ -30,6 +30,14 @@ from tools.briefing_pipeline import (
     write_batch,
 )
 from tools.gmail_ingest import fetch_mail_drop
+from tools.model_runtime import (
+    add_attempt,
+    estimate_tokens_from_chars,
+    finish_ledger,
+    new_ledger,
+    stable_hash,
+    write_json_atomic,
+)
 
 
 DEFAULT_CONFIG = ROOT / "local-data" / "briefing" / "config.json"
@@ -37,6 +45,9 @@ DEFAULT_ENV = ROOT / ".env"
 DEFAULT_OUTPUT = ROOT / "local-data" / "briefing"
 ALLOWED_ACTIONS = Literal["open", "save", "skip", "deepen", "verify"]
 ALLOWED_TYPES = Literal["news", "product", "model", "paper", "opinion", "tutorial", "interview"]
+MAIL_PROMPT_VERSION = "mail-briefing-v1"
+MODEL_OUTPUT_TOKEN_LIMIT = 5000
+SKIP_SUBJECT_PATTERNS = ("verification code", "验证码", "unsubscribe", "退订")
 
 
 class ScheduleConfig(BaseModel):
@@ -58,6 +69,11 @@ class ModelConfig(BaseModel):
     max_items: int = Field(default=10, ge=1, le=20)
     max_items_per_email: int = Field(default=2, ge=1, le=5)
     max_chars_per_email: int = Field(default=50000, ge=2000, le=200000)
+    max_candidate_emails: int = Field(default=10, ge=1, le=50)
+    max_model_calls_per_run: int = Field(default=10, ge=1, le=50)
+    max_total_input_chars: int = Field(default=200000, ge=2000, le=2000000)
+    max_estimated_input_tokens: int = Field(default=100000, ge=1000, le=1000000)
+    max_estimated_output_tokens: int = Field(default=50000, ge=1000, le=500000)
 
 
 class TTSConfig(BaseModel):
@@ -99,6 +115,7 @@ class JobConfig(BaseModel):
 class GeneratedRef(BaseModel):
     paragraph_index: int = Field(ge=1)
     label: str = Field(min_length=1)
+    excerpt_zh: str = ""
 
 
 class GeneratedSegment(BaseModel):
@@ -193,10 +210,51 @@ def generation_prompt(message: dict, source_id: str, config: ModelConfig) -> str
 - 不把广告、验证码、活动提醒和纯促销单独生成资讯。
 - event_cluster_id 使用简短英文小写连字符 slug，让不同邮件的同一事件尽量一致。
 - priority 1 到 5，5 表示最值得保留。
-- JSON 格式示例：{{"items":[{{"title":"...","content_type":"news","event_cluster_id":"event-slug","essence":"...","priority":4,"spoken_segments":[{{"text":"...","kind":"fact","attribution":"source","refs":[{{"paragraph_index":3,"label":"发布背景"}}]}}],"why_it_matters":"...","caveats":["..."],"suggested_action":"open","action_reason":"..."}}]}}
+- refs 中每个引用必须包含 excerpt_zh：把对应英文或中文邮件段落翻译/整理为简洁中文，保留关键数字、模型名、人名和限定，不要加入段落没有的信息。
+- JSON 格式示例：{{"items":[{{"title":"...","content_type":"news","event_cluster_id":"event-slug","essence":"...","priority":4,"spoken_segments":[{{"text":"...","kind":"fact","attribution":"source","refs":[{{"paragraph_index":3,"label":"发布背景","excerpt_zh":"该段说明了发布背景。"}}]}}],"why_it_matters":"...","caveats":["..."],"suggested_action":"open","action_reason":"..."}}]}}
 
 邮件 JSON：
 {json.dumps(payload, ensure_ascii=False)}"""
+
+
+def prepare_messages(messages: list[dict], config: ModelConfig) -> tuple[list[dict], list[dict], dict[str, int]]:
+    selected: list[dict] = []
+    skipped: list[dict] = []
+    seen: set[str] = set()
+    for message in messages:
+        subject = str(message.get("subject") or "")
+        if any(pattern in subject.lower() for pattern in SKIP_SUBJECT_PATTERNS):
+            skipped.append({"subject": subject, "reason": "deterministic_filter"})
+            continue
+        paragraphs, _ = compact_paragraphs(message, config.max_chars_per_email)
+        fingerprint = stable_hash({"subject": subject, "paragraphs": paragraphs})
+        if fingerprint in seen:
+            skipped.append({"subject": subject, "reason": "duplicate_content"})
+            continue
+        seen.add(fingerprint)
+        if len(selected) >= config.max_candidate_emails:
+            skipped.append({"subject": subject, "reason": "candidate_limit"})
+            continue
+        selected.append(message)
+
+    input_chars = sum(len(generation_prompt(message, source_id_for(message), config)) for message in selected)
+    estimated = {
+        "model_calls": len(selected),
+        "input_chars": input_chars,
+        "input_tokens": estimate_tokens_from_chars(input_chars),
+        "output_tokens": len(selected) * MODEL_OUTPUT_TOKEN_LIMIT,
+    }
+    limits = {
+        "model_calls": config.max_model_calls_per_run,
+        "input_chars": config.max_total_input_chars,
+        "input_tokens": config.max_estimated_input_tokens,
+        "output_tokens": config.max_estimated_output_tokens,
+    }
+    exceeded = [key for key, value in estimated.items() if value > limits[key]]
+    if exceeded:
+        detail = ", ".join(f"{key}={estimated[key]}>{limits[key]}" for key in exceeded)
+        raise RuntimeError(f"模型调用前预算检查失败：{detail}；未调用模型")
+    return selected, skipped, estimated
 
 
 def deepseek_client(api_key: str, base_url: str):
@@ -207,10 +265,30 @@ def deepseek_client(api_key: str, base_url: str):
     return OpenAI(api_key=api_key, base_url=base_url)
 
 
-def generate_email_items(client, message: dict, source_id: str, config: ModelConfig) -> tuple[list[GeneratedItem], dict]:
+def generate_email_items(
+    client,
+    message: dict,
+    source_id: str,
+    config: ModelConfig,
+    *,
+    cache_root: Path,
+    ledger: dict,
+) -> list[GeneratedItem]:
     prompt = generation_prompt(message, source_id, config)
+    cache_key = stable_hash({
+        "prompt_version": MAIL_PROMPT_VERSION,
+        "model": config.model,
+        "prompt": prompt,
+    })
+    cache_path = cache_root / f"{cache_key}.json"
+    if cache_path.exists():
+        cached = GeneratedEmail.model_validate_json(cache_path.read_text(encoding="utf-8"))
+        ledger["cache_hits"] += 1
+        return cached.items
+    ledger["cache_misses"] += 1
     last_error: Exception | None = None
     for attempt in range(2):
+        response = None
         try:
             response = client.chat.completions.create(
                 model=config.model,
@@ -219,7 +297,7 @@ def generate_email_items(client, message: dict, source_id: str, config: ModelCon
                     {"role": "user", "content": prompt},
                 ],
                 response_format={"type": "json_object"},
-                max_tokens=5000,
+                max_tokens=MODEL_OUTPUT_TOKEN_LIMIT,
                 stream=False,
                 extra_body={"thinking": {"type": "disabled"}},
             )
@@ -231,11 +309,36 @@ def generate_email_items(client, message: dict, source_id: str, config: ModelCon
                     for ref in segment.refs:
                         if ref.paragraph_index not in known:
                             raise ValueError(f"模型引用不存在的邮件段落：{ref.paragraph_index}")
-            usage = response.usage.model_dump() if response.usage else {}
-            return generated.items, usage
+            add_attempt(
+                ledger,
+                unit=source_id,
+                attempt=attempt + 1,
+                status="success",
+                usage=response.usage,
+            )
+            write_json_atomic(cache_path, generated.model_dump())
+            return generated.items
         except (ValidationError, ValueError, json.JSONDecodeError) as exc:
             last_error = exc
+            add_attempt(
+                ledger,
+                unit=source_id,
+                attempt=attempt + 1,
+                status="validation_error",
+                usage=getattr(response, "usage", None),
+                error=str(exc),
+            )
             prompt += f"\n上次 JSON 校验失败：{exc}。请修正后重新输出完整 JSON。"
+        except Exception as exc:
+            add_attempt(
+                ledger,
+                unit=source_id,
+                attempt=attempt + 1,
+                status="request_error",
+                usage=getattr(response, "usage", None),
+                error=str(exc),
+            )
+            raise
     raise RuntimeError(f"DeepSeek 输出连续两次未通过校验：{last_error}")
 
 
@@ -284,6 +387,10 @@ def build_batch(drop: dict, generated: list[tuple[dict, list[GeneratedItem]]], c
     for index, (message, generated_item) in enumerate(deduped, 1):
         source_id = source_id_for(message)
         used_sources.add(source_id)
+        paragraph_by_index = {
+            paragraph["index"]: paragraph.get("text", "").strip()
+            for paragraph in message.get("paragraphs", [])
+        }
         segments: list[SpokenSegment] = []
         for segment_index, segment in enumerate(generated_item.spoken_segments, 1):
             refs = [
@@ -293,6 +400,8 @@ def build_batch(drop: dict, generated: list[tuple[dict, list[GeneratedItem]]], c
                     anchor_kind="email_paragraph",
                     locator=f"paragraph-{ref.paragraph_index}",
                     url=sources[source_id].url,
+                    excerpt=paragraph_by_index.get(ref.paragraph_index, ""),
+                    excerpt_zh=ref.excerpt_zh,
                 )
                 for ref in segment.refs
             ]
@@ -356,48 +465,71 @@ def deploy_batch(batch_dir: Path, config: DeployConfig) -> str:
 def run_job(config_path: Path, env_path: Path, skip_tts: bool = False) -> Path | None:
     load_env(env_path)
     config = load_config(config_path)
-    required = ["GMAIL_ADDRESS", "GMAIL_APP_PASSWORD", "DEEPSEEK_API_KEY"]
-    missing = [key for key in required if not os.environ.get(key)]
-    if missing:
-        raise RuntimeError(f"缺少环境变量：{', '.join(missing)}")
-
-    since = datetime.now(timezone.utc) - timedelta(hours=config.gmail.lookback_hours)
-    drop = fetch_mail_drop(
-        os.environ["GMAIL_ADDRESS"],
-        os.environ["GMAIL_APP_PASSWORD"],
-        sorted(set(config.gmail.senders)),
-        since,
-        config.gmail.max_per_sender,
-    )
-    if not drop["emails"]:
-        print("时间窗口内没有新邮件，不生成空批次")
-        return None
-
-    client = deepseek_client(os.environ["DEEPSEEK_API_KEY"], config.model.base_url)
-    generated: list[tuple[dict, list[GeneratedItem]]] = []
-    usage_total = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
-    for message in drop["emails"]:
-        source_id = source_id_for(message)
-        items, usage = generate_email_items(client, message, source_id, config.model)
-        generated.append((message, items))
-        for key in usage_total:
-            usage_total[key] += int(usage.get(key) or 0)
-        print(f"DeepSeek：{message.get('subject', '无主题')} → {len(items)} 条")
-
-    batch = build_batch(drop, generated, config.model)
-    target = DEFAULT_OUTPUT / batch.batch_id
-    if config.tts.enabled and not skip_tts:
-        batch = asyncio.run(
-            synthesize_audio(batch, target, config.tts.voice, config.tts.rate, config.tts.pitch)
+    run_id = f"mail-{datetime.now().astimezone().strftime('%Y%m%d-%H%M%S-%f')}"
+    usage_path = DEFAULT_OUTPUT / "usage" / f"{run_id}.json"
+    ledger = new_ledger("mail_briefing", config.model.model, MAIL_PROMPT_VERSION)
+    try:
+        required = ["GMAIL_ADDRESS", "GMAIL_APP_PASSWORD", "DEEPSEEK_API_KEY"]
+        missing = [key for key in required if not os.environ.get(key)]
+        if missing:
+            raise RuntimeError(f"缺少环境变量：{', '.join(missing)}")
+        since = datetime.now(timezone.utc) - timedelta(hours=config.gmail.lookback_hours)
+        drop = fetch_mail_drop(
+            os.environ["GMAIL_ADDRESS"],
+            os.environ["GMAIL_APP_PASSWORD"],
+            sorted(set(config.gmail.senders)),
+            since,
+            config.gmail.max_per_sender,
         )
-    output = write_batch(batch, DEFAULT_OUTPUT)
-    usage_path = target / "usage.json"
-    usage_path.write_text(json.dumps(usage_total, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print(f"内容包：{output}")
-    print(f"Token：{usage_total}")
-    if config.deploy.enabled:
-        print(f"手机地址：{deploy_batch(target, config.deploy)}")
-    return output
+        if not drop["emails"]:
+            print("时间窗口内没有新邮件，不生成空批次")
+            finish_ledger(ledger, "success")
+            write_json_atomic(usage_path, ledger)
+            return None
+
+        selected, skipped, estimated = prepare_messages(drop["emails"], config.model)
+        ledger["estimated"] = estimated
+        ledger["skipped"] = skipped
+        if not selected:
+            print("确定性筛选后没有需要生成的邮件，不调用模型")
+            finish_ledger(ledger, "success")
+            write_json_atomic(usage_path, ledger)
+            return None
+        client = deepseek_client(os.environ["DEEPSEEK_API_KEY"], config.model.base_url)
+        generated: list[tuple[dict, list[GeneratedItem]]] = []
+        cache_root = DEFAULT_OUTPUT / "model-cache" / "mail"
+        for message in selected:
+            source_id = source_id_for(message)
+            items = generate_email_items(
+                client,
+                message,
+                source_id,
+                config.model,
+                cache_root=cache_root,
+                ledger=ledger,
+            )
+            generated.append((message, items))
+            print(f"DeepSeek：{message.get('subject', '无主题')} → {len(items)} 条")
+
+        batch = build_batch(drop, generated, config.model)
+        target = DEFAULT_OUTPUT / batch.batch_id
+        if config.tts.enabled and not skip_tts:
+            batch = asyncio.run(
+                synthesize_audio(batch, target, config.tts.voice, config.tts.rate, config.tts.pitch)
+            )
+        output = write_batch(batch, DEFAULT_OUTPUT)
+        finish_ledger(ledger, "success")
+        write_json_atomic(usage_path, ledger)
+        write_json_atomic(target / "usage.json", ledger)
+        print(f"内容包：{output}")
+        print(f"Token：{ledger['totals']}")
+        if config.deploy.enabled:
+            print(f"手机地址：{deploy_batch(target, config.deploy)}")
+        return output
+    except Exception as exc:
+        finish_ledger(ledger, "failed", str(exc))
+        write_json_atomic(usage_path, ledger)
+        raise
 
 
 def main() -> None:

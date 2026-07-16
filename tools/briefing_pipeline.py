@@ -42,6 +42,8 @@ class SourceRef(BaseModel):
     anchor_kind: Literal["paragraph", "page", "timestamp", "image_region", "email_paragraph"]
     locator: str = Field(min_length=1)
     url: str = Field(min_length=1)
+    excerpt: str = ""
+    excerpt_zh: str = ""
 
     _validate_url = field_validator("url")(validate_link)
 
@@ -241,6 +243,10 @@ def main() -> None:
     parser.add_argument("--pitch", default="-2Hz")
     parser.add_argument("--serve", action="store_true")
     parser.add_argument("--port", type=int, default=8737)
+    parser.add_argument("--history-root", type=Path, default=ROOT / "local-data" / "history")
+    parser.add_argument("--site-base-url", default=os.getenv("AI_VIDEO_COURSE_BASE_URL"), help="写入历史 Markdown 的网页基准地址")
+    parser.add_argument("--mail-drop", type=Path, help="可选：对应 Gmail mail-drop JSON，用于在历史记录中保存完整邮件内容")
+    parser.add_argument("--no-archive", action="store_true", help="不写入本地历史记录")
     args = parser.parse_args()
 
     batch = BriefingBatch.model_validate_json(args.fixture.read_text(encoding="utf-8"))
@@ -249,6 +255,21 @@ def main() -> None:
         batch = asyncio.run(synthesize_audio(batch, target, args.voice, args.rate, args.pitch, args.force_tts))
     path = write_batch(batch, args.output_root)
     print(f"资讯速听内容包已生成：{path}")
+    if not args.no_archive:
+        try:
+            from tools.archive_records import archive_briefing
+        except ModuleNotFoundError:
+            from archive_records import archive_briefing
+        mail_drop = None
+        if args.mail_drop:
+            mail_drop = json.loads(args.mail_drop.read_text(encoding="utf-8"))
+        record = archive_briefing(
+            batch,
+            history_root=args.history_root,
+            site_base_url=args.site_base_url,
+            mail_drop=mail_drop,
+        )
+        print(f"历史记录已写入：{record['markdown_path']}")
     if args.output_root.resolve() == DEFAULT_OUTPUT.resolve():
         url = f"http://localhost:{args.port}/prototype/briefing/?batch={batch.batch_id}"
         print(f"本地查看：{url}")

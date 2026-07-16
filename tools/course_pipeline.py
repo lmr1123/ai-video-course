@@ -18,13 +18,28 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from tools.model_runtime import (
+    add_attempt,
+    estimate_tokens_from_chars,
+    finish_ledger,
+    new_ledger,
+    stable_hash,
+    write_json_atomic,
+)
+
 DEFAULT_OUTPUT = ROOT / "prototype" / "generated"
+DEFAULT_CACHE = ROOT / "local-data" / "model-cache" / "course"
+DEFAULT_USAGE = ROOT / "local-data" / "usage" / "course"
+COURSE_PROMPT_VERSION = "course-v1"
 
 
 class Claim(BaseModel):
@@ -172,8 +187,16 @@ def transcript_for_prompt(cues: list[dict]) -> str:
     )
 
 
-def generate_course(url: str, model: str) -> Course:
-    metadata, cues = fetch_source(url)
+def generate_course_from_source(
+    url: str,
+    model: str,
+    metadata: dict,
+    cues: list[dict],
+    client,
+    *,
+    cache_root: Path,
+    ledger: dict,
+) -> Course:
     video_id = extract_video_id(url)
     duration = int(metadata.get("duration") or (cues[-1]["end"] if cues else 0))
     context = {
@@ -183,12 +206,6 @@ def generate_course(url: str, model: str) -> Course:
         "channel": metadata.get("channel") or metadata.get("uploader") or "",
         "duration_sec": duration,
     }
-    try:
-        from openai import OpenAI
-    except ImportError as exc:
-        raise RuntimeError("缺少 openai SDK，请运行：pip install -r requirements.txt") from exc
-    if not os.getenv("OPENAI_API_KEY"):
-        raise RuntimeError("缺少 OPENAI_API_KEY；密钥只应设置在本地环境变量")
     instructions = """你是 AI Engineering 课程编排师，面向有基础项目经验的 vibe coding 开发者。
 把技术长视频重构为中文课程，不做逐段摘要。必须：
 1. 按语义切成 5–12 个连续主题，时间戳只能来自输入字幕；
@@ -198,15 +215,44 @@ def generate_course(url: str, model: str) -> Course:
 5. 输出可验证的闭卷复述问题与 3–5 个核心检查点；
 6. 不虚构作者、产品、数字或时间戳。"""
     payload = json.dumps(context, ensure_ascii=False) + "\n\n带时间戳英文字幕：\n" + transcript_for_prompt(cues)
-    response = OpenAI().responses.parse(
-        model=model,
-        instructions=instructions,
-        input=payload,
-        text_format=Course,
-        max_output_tokens=30000,
-    )
+    cache_key = stable_hash({
+        "prompt_version": COURSE_PROMPT_VERSION,
+        "model": model,
+        "instructions": instructions,
+        "payload": payload,
+    })
+    cache_path = cache_root / f"{cache_key}.json"
+    ledger["estimated"] = {
+        "input_chars": len(instructions) + len(payload),
+        "input_tokens": estimate_tokens_from_chars(len(instructions) + len(payload)),
+        "output_tokens": 30000,
+    }
+    if cache_path.exists():
+        ledger["cache_hits"] += 1
+        return Course.model_validate_json(cache_path.read_text(encoding="utf-8"))
+    ledger["cache_misses"] += 1
+    response = None
+    try:
+        response = client.responses.parse(
+            model=model,
+            instructions=instructions,
+            input=payload,
+            text_format=Course,
+            max_output_tokens=30000,
+        )
+    except Exception as exc:
+        add_attempt(ledger, unit=video_id, attempt=1, status="request_error", error=str(exc))
+        raise
     course = response.output_parsed
     if course is None:
+        add_attempt(
+            ledger,
+            unit=video_id,
+            attempt=1,
+            status="parse_error",
+            usage=getattr(response, "usage", None),
+            error="模型没有返回可解析的课程结构",
+        )
         raise RuntimeError("模型没有返回可解析的课程结构")
     # 来源字段由程序写入，避免模型改写视频身份。
     course.video_id = context["video_id"]
@@ -214,7 +260,56 @@ def generate_course(url: str, model: str) -> Course:
     course.source_title = context["source_title"]
     course.channel = context["channel"]
     course.duration_sec = context["duration_sec"]
-    return Course.model_validate(course.model_dump())
+    try:
+        course = Course.model_validate(course.model_dump())
+    except ValueError as exc:
+        add_attempt(
+            ledger,
+            unit=video_id,
+            attempt=1,
+            status="validation_error",
+            usage=getattr(response, "usage", None),
+            error=str(exc),
+        )
+        raise
+    add_attempt(
+        ledger,
+        unit=video_id,
+        attempt=1,
+        status="success",
+        usage=getattr(response, "usage", None),
+    )
+    write_json_atomic(cache_path, course.model_dump())
+    return course
+
+
+def generate_course(
+    url: str,
+    model: str,
+    *,
+    cache_root: Path = DEFAULT_CACHE,
+    ledger: dict | None = None,
+    client=None,
+) -> Course:
+    metadata, cues = fetch_source(url)
+    if client is None:
+        try:
+            from openai import OpenAI
+        except ImportError as exc:
+            raise RuntimeError("缺少 openai SDK，请运行：pip install -r requirements.txt") from exc
+        if not os.getenv("OPENAI_API_KEY"):
+            raise RuntimeError("缺少 OPENAI_API_KEY；密钥只应设置在本地环境变量")
+        client = OpenAI()
+    active_ledger = ledger if ledger is not None else new_ledger("course", model, COURSE_PROMPT_VERSION)
+    return generate_course_from_source(
+        url,
+        model,
+        metadata,
+        cues,
+        client,
+        cache_root=cache_root,
+        ledger=active_ledger,
+    )
 
 
 def write_course(course: Course, output_root: Path) -> Path:
@@ -242,15 +337,40 @@ def main() -> None:
     parser.add_argument("--model", default=os.getenv("OPENAI_MODEL", "gpt-5.4"))
     parser.add_argument("--fixture", type=Path, help="跳过下载和 API，验证已有课程 JSON")
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--history-root", type=Path, default=ROOT / "local-data" / "history")
+    parser.add_argument("--cache-root", type=Path, default=DEFAULT_CACHE)
+    parser.add_argument("--usage-root", type=Path, default=DEFAULT_USAGE)
+    parser.add_argument("--site-base-url", default=os.getenv("AI_VIDEO_COURSE_BASE_URL"), help="写入历史 Markdown 的网页基准地址")
+    parser.add_argument("--no-archive", action="store_true", help="不写入本地历史记录")
     args = parser.parse_args()
     if args.fixture:
         course = Course.model_validate_json(args.fixture.read_text(encoding="utf-8"))
     elif args.url:
-        course = generate_course(args.url, args.model)
+        ledger = new_ledger("course", args.model, COURSE_PROMPT_VERSION)
+        usage_path = args.usage_root / f"{datetime.now().astimezone().strftime('%Y%m%d-%H%M%S-%f')}.json"
+        try:
+            course = generate_course(args.url, args.model, cache_root=args.cache_root, ledger=ledger)
+            finish_ledger(ledger, "success")
+            write_json_atomic(usage_path, ledger)
+        except Exception as exc:
+            finish_ledger(ledger, "failed", str(exc))
+            write_json_atomic(usage_path, ledger)
+            raise
     else:
         parser.error("请提供 YouTube URL 或 --fixture")
     path = write_course(course, args.output_root)
     print(f"课程已生成：{path}")
+    if not args.no_archive:
+        try:
+            from tools.archive_records import archive_course
+        except ModuleNotFoundError:
+            from archive_records import archive_course
+        record = archive_course(
+            course,
+            history_root=args.history_root,
+            site_base_url=args.site_base_url,
+        )
+        print(f"历史记录已写入：{record['markdown_path']}")
     if args.output_root.resolve() == DEFAULT_OUTPUT.resolve():
         print(f"本地查看：http://localhost:8737/generated/viewer.html?id={course.video_id}")
 
