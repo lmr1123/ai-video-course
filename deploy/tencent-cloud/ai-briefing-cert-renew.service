@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew AI Briefing public IP certificate
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/certbot-ip/bin/certbot renew --cert-name 49.232.195.165 --quiet --deploy-hook /usr/local/sbin/deploy-ai-briefing-cert

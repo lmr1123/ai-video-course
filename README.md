@@ -84,7 +84,7 @@ python3 tools/install_mail_briefing_schedule.py --dry-run  # 先检查 plist
 python3 tools/install_mail_briefing_schedule.py            # 写入并加载 LaunchAgent
 ```
 
-日志写入 `local-data/briefing/logs/`。每次成功生成使用独立批次目录，失败或没有新邮件不会覆盖上一批。腾讯云部署只同步播放器、`briefing.json` 和 MP3；Caddy 当前仅监听本机，待已备案域名准备好后再启用标准公网 HTTPS。当前仓库和 GitHub Pages 是公开的，禁止把 `local-data/`、`.env`、邮箱正文或自动生成简报提交到仓库。
+日志写入 `local-data/briefing/logs/`。每次成功生成使用独立批次目录，失败或没有新邮件不会覆盖上一批。腾讯云部署只同步播放器、`briefing.json` 和 MP3；当前使用 Let's Encrypt 短期公网 IP 证书提供浏览器直连 HTTPS，Certbot 定时续签并在成功后 reload Caddy。当前仓库和 GitHub Pages 是公开的，禁止把 `local-data/`、`.env`、邮箱正文或自动生成简报提交到仓库。
 
 ## 自动生成课程
 

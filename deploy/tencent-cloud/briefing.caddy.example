@@ -1,7 +1,23 @@
-# 等待已备案域名前仅监听本机；接入域名时将地址替换为域名并删除 bind 行。
-# 复制到 /etc/caddy/conf.d/briefing.caddy；用 `caddy hash-password --plaintext '强随机密码'` 生成密码哈希。
+# 本机入口保留给服务器自检；公网 IP 入口使用 Certbot 管理的短期证书。
+# 主 Caddyfile 全局配置需设置 `default_sni REPLACE_WITH_PUBLIC_IP`，让不发送 SNI 的纯 IP 客户端也能获得证书。
+# 用 `caddy hash-password --plaintext '强随机密码'` 生成密码哈希。
 http://:8792 {
 	bind 127.0.0.1
+	encode gzip
+
+	basicauth {
+		briefing REPLACE_WITH_CADDY_PASSWORD_HASH
+	}
+
+	root * /home/ubuntu/ai-briefing-site
+	file_server
+
+	@private_json path *.json
+	header @private_json Cache-Control "no-store"
+}
+
+https://REPLACE_WITH_PUBLIC_IP {
+	tls /etc/caddy/certs/ai-briefing-fullchain.pem /etc/caddy/certs/ai-briefing-privkey.pem
 	encode gzip
 
 	basicauth {

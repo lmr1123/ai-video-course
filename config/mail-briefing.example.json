@@ -34,6 +34,6 @@
     "enabled": true,
     "ssh_host": "ker-cloud",
     "remote_root": "/home/ubuntu/ai-briefing-site",
-    "public_url": "https://REPLACE_WITH_ICP_DOMAIN"
+    "public_url": "https://REPLACE_WITH_PUBLIC_IP_OR_ICP_DOMAIN"
   }
 }

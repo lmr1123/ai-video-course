@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+install -d -m 0750 -o root -g caddy /etc/caddy/certs
+install -m 0644 -o root -g caddy /etc/letsencrypt/live/49.232.195.165/fullchain.pem /etc/caddy/certs/ai-briefing-fullchain.pem
+install -m 0640 -o root -g caddy /etc/letsencrypt/live/49.232.195.165/privkey.pem /etc/caddy/certs/ai-briefing-privkey.pem
+caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+systemctl reload caddy
