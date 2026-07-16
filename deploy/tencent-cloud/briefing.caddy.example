@@ -1,4 +1,4 @@
-# 仅监听本机，但接受 Tunnel/Serve 保留的公网 Host。
+# 等待已备案域名前仅监听本机；接入域名时将地址替换为域名并删除 bind 行。
 # 复制到 /etc/caddy/conf.d/briefing.caddy；用 `caddy hash-password --plaintext '强随机密码'` 生成密码哈希。
 http://:8792 {
 	bind 127.0.0.1
