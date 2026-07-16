@@ -42,9 +42,9 @@ python3 tools/build_export.py                        # 分镜截图 + HyperFrame
 
 依赖：Python 3 + `pip install edge-tts playwright`、ffmpeg；MP4 的 HyperFrames 渲染路线另需 Node ≥ 22（`npx hyperframes render`）。
 
-## 本地资讯速听
+## 资讯速听与定时 Gmail 简报
 
-首轮原型使用人工整理的内容包验证“短卡提炼、句级溯源和连续播放”，暂不接 Gmail、RSS 或 X 账号：
+人工内容包仍可用于离线验证“短卡提炼、句级溯源和连续播放”：
 
 ```bash
 python3 tools/briefing_pipeline.py \
@@ -64,6 +64,27 @@ python3 tools/briefing_pipeline.py \
 ```
 
 真实内容包和生成音频写入 `local-data/briefing/`，不会被 Git 跟踪或发布。正式范围、内容分型和验证协议见 [多源资讯速听模式方案](docs/多源资讯速听模式方案.md)。20 条首轮素材与裸读基线模板见 [资讯速听首轮验证](experiments/资讯速听首轮验证/素材与基线.md)。
+
+手工验证通过后，项目增加了本机私有的 Gmail 定时入口。复制配置模板并填写本地密钥：
+
+```bash
+cp config/mail-briefing.example.json local-data/briefing/config.json
+cp .env.example .env
+
+# 在 .env 填写 GMAIL_ADDRESS、GMAIL_APP_PASSWORD、DEEPSEEK_API_KEY
+python3 tools/mail_briefing_job.py --config local-data/briefing/config.json
+```
+
+任务流程：`Gmail 白名单邮件 → 精确时间窗口过滤与去重 → DeepSeek 四段式提炼 → Pydantic/证据段落校验 → Edge TTS → 腾讯云私有站点`。DeepSeek 使用官方 OpenAI 兼容接口，默认模型为 `deepseek-v4-flash`；JSON 输出仍会经过本地 schema 和段落编号复核。邮件正文会发送给 DeepSeek 做提炼，最终摘要会发送给 Edge TTS；二者都不会进入 Git。
+
+`local-data/briefing/config.json` 可设置每日小时/分钟、时区、回看小时数、发件人、模型、最大条数、声线和部署目标。macOS 定时安装：
+
+```bash
+python3 tools/install_mail_briefing_schedule.py --dry-run  # 先检查 plist
+python3 tools/install_mail_briefing_schedule.py            # 写入并加载 LaunchAgent
+```
+
+日志写入 `local-data/briefing/logs/`。每次成功生成使用独立批次目录，失败或没有新邮件不会覆盖上一批。腾讯云部署只同步播放器、`briefing.json` 和 MP3；示例 Caddy/Cloudflare Tunnel 配置位于 `deploy/tencent-cloud/`。当前仓库和 GitHub Pages 是公开的，禁止把 `local-data/`、`.env`、邮箱正文或自动生成简报提交到仓库。
 
 ## 自动生成课程
 

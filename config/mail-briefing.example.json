@@ -1,0 +1,39 @@
+{
+  "schedule": {
+    "hour": 8,
+    "minute": 0,
+    "timezone": "Asia/Shanghai"
+  },
+  "gmail": {
+    "senders": [
+      "aivalley@mail.beehiiv.com",
+      "swyx@substack.com",
+      "swyx+ainews@substack.com",
+      "thursdai@substack.com",
+      "no-reply@notifications.superlinear.academy",
+      "noreply@bestblogs.dev"
+    ],
+    "lookback_hours": 24,
+    "max_per_sender": 20
+  },
+  "model": {
+    "provider": "deepseek",
+    "base_url": "https://api.deepseek.com",
+    "model": "deepseek-v4-flash",
+    "max_items": 10,
+    "max_items_per_email": 2,
+    "max_chars_per_email": 50000
+  },
+  "tts": {
+    "enabled": true,
+    "voice": "zh-CN-XiaoxiaoNeural",
+    "rate": "+4%",
+    "pitch": "-2Hz"
+  },
+  "deploy": {
+    "enabled": true,
+    "ssh_host": "ker-cloud",
+    "remote_root": "/home/ubuntu/ai-briefing-site",
+    "public_url": "https://REPLACE_WITH_TUNNEL.trycloudflare.com"
+  }
+}

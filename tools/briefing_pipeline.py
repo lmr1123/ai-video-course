@@ -81,6 +81,9 @@ class BriefingItem(BaseModel):
     suggested_action: Literal["open", "save", "skip", "deepen", "verify"]
     action_reason: str = Field(min_length=1)
     course_url: str | None = None
+    transition_text: str = ""
+    transition_audio_file: str | None = None
+    transition_audio_duration: float | None = Field(default=None, gt=0)
 
     _validate_course_url = field_validator("course_url")(lambda value: validate_link(value) if value else value)
 
@@ -101,6 +104,9 @@ class BriefingBatch(BaseModel):
     title: str = Field(min_length=1)
     generated_at: str
     language: Literal["zh-CN"] = "zh-CN"
+    intro_text: str = ""
+    intro_audio_file: str | None = None
+    intro_audio_duration: float | None = Field(default=None, gt=0)
     sources: list[BriefingSource] = Field(min_length=1)
     items: list[BriefingItem] = Field(min_length=1, max_length=20)
 
@@ -152,6 +158,13 @@ def safe_filename(item_id: str, segment_id: str) -> str:
     return value
 
 
+def safe_narration_filename(value: str) -> str:
+    filename = f"{value}.mp3"
+    if not re.fullmatch(r"[a-z0-9-]+\.mp3", filename):
+        raise ValueError("播报音频文件名包含不允许的字符")
+    return filename
+
+
 async def synthesize_audio(
     batch: BriefingBatch,
     target: Path,
@@ -167,28 +180,47 @@ async def synthesize_audio(
 
     audio_root = target / "audio"
     audio_root.mkdir(parents=True, exist_ok=True)
+
+    async def render_clip(text: str, filename: str, label: str) -> tuple[str, float | None]:
+        destination = audio_root / filename
+        if force or not destination.exists():
+            temporary = destination.with_suffix(".tmp.mp3")
+            last_error: Exception | None = None
+            for attempt in range(3):
+                try:
+                    await edge_tts.Communicate(text, voice, rate=rate, pitch=pitch).save(str(temporary))
+                    os.replace(temporary, destination)
+                    last_error = None
+                    break
+                except Exception as exc:  # 网络/TTS 服务错误统一有限重试
+                    last_error = exc
+                    temporary.unlink(missing_ok=True)
+                    if attempt < 2:
+                        await asyncio.sleep(1.5 * (attempt + 1))
+            if last_error is not None:
+                raise RuntimeError(f"语音生成失败：{label}: {last_error}")
+        return f"audio/{filename}", audio_duration(destination)
+
+    if batch.intro_text:
+        batch.intro_audio_file, batch.intro_audio_duration = await render_clip(
+            batch.intro_text,
+            safe_narration_filename("batch-intro"),
+            "batch-intro",
+        )
     for item in batch.items:
+        if item.transition_text:
+            item.transition_audio_file, item.transition_audio_duration = await render_clip(
+                item.transition_text,
+                safe_narration_filename(f"{item.item_id}-transition"),
+                f"{item.item_id}/transition",
+            )
         for segment in item.spoken_segments:
             filename = safe_filename(item.item_id, segment.segment_id)
-            destination = audio_root / filename
-            if force or not destination.exists():
-                temporary = destination.with_suffix(".tmp.mp3")
-                last_error: Exception | None = None
-                for attempt in range(3):
-                    try:
-                        await edge_tts.Communicate(segment.text, voice, rate=rate, pitch=pitch).save(str(temporary))
-                        os.replace(temporary, destination)
-                        last_error = None
-                        break
-                    except Exception as exc:  # 网络/TTS 服务错误统一有限重试
-                        last_error = exc
-                        temporary.unlink(missing_ok=True)
-                        if attempt < 2:
-                            await asyncio.sleep(1.5 * (attempt + 1))
-                if last_error is not None:
-                    raise RuntimeError(f"语音生成失败：{item.item_id}/{segment.segment_id}: {last_error}")
-            segment.audio_file = f"audio/{filename}"
-            segment.audio_duration = audio_duration(destination)
+            segment.audio_file, segment.audio_duration = await render_clip(
+                segment.text,
+                filename,
+                f"{item.item_id}/{segment.segment_id}",
+            )
     return BriefingBatch.model_validate(batch.model_dump())
 
 

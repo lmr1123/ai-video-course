@@ -1,0 +1,16 @@
+[Unit]
+Description=Private AI Briefing Cloudflare Quick Tunnel
+After=network-online.target caddy.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+ExecStart=/usr/local/bin/cloudflared tunnel --url http://127.0.0.1:8792 --protocol http2 --no-autoupdate
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

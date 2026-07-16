@@ -7,7 +7,13 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.briefing_pipeline import BriefingBatch, safe_filename, synthesize_audio, write_batch
+from tools.briefing_pipeline import (
+    BriefingBatch,
+    safe_filename,
+    safe_narration_filename,
+    synthesize_audio,
+    write_batch,
+)
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -50,6 +56,29 @@ class BriefingPipelineTest(unittest.TestCase):
 
     def test_safe_audio_filename(self):
         self.assertEqual(safe_filename("item-001", "segment-01"), "item-001-segment-01.mp3")
+        self.assertEqual(safe_narration_filename("batch-intro"), "batch-intro.mp3")
+
+    def test_tts_generates_intro_and_transition_audio(self):
+        data = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        data["intro_text"] = "今天带来四条内容。"
+        data["items"][1]["transition_text"] = "接下来是第二条。"
+        batch = BriefingBatch.model_validate(data)
+
+        class FakeCommunicate:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            async def save(self, path):
+                Path(path).write_bytes(b"audio")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                patch.dict(sys.modules, {"edge_tts": types.SimpleNamespace(Communicate=FakeCommunicate)}),
+                patch("tools.briefing_pipeline.audio_duration", return_value=1.0),
+            ):
+                result = asyncio.run(synthesize_audio(batch, Path(tmp), "voice", "+0%", "+0Hz"))
+            self.assertEqual(result.intro_audio_file, "audio/batch-intro.mp3")
+            self.assertEqual(result.items[1].transition_audio_file, "audio/item-002-transition.mp3")
 
     def test_tts_cache_is_reused(self):
         batch = BriefingBatch.model_validate_json(FIXTURE.read_text(encoding="utf-8"))

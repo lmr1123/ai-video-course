@@ -16,5 +16,6 @@ prototype/*.bak-*
 # 本地模型密钥
 .env
 .env.*
+!.env.example
 __pycache__/
 *.pyc

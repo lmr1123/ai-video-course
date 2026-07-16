@@ -1,0 +1,16 @@
+# 复制到服务器 /etc/caddy/conf.d/briefing.caddy，再用配套 systemd 服务建立 HTTPS Quick Tunnel。
+# 用 `caddy hash-password --plaintext '强随机密码'` 生成密码哈希。
+http://127.0.0.1:8792 {
+	bind 127.0.0.1
+	encode gzip
+
+	basicauth {
+		briefing REPLACE_WITH_CADDY_PASSWORD_HASH
+	}
+
+	root * /home/ubuntu/ai-briefing-site
+	file_server
+
+	@private_json path *.json
+	header @private_json Cache-Control "no-store"
+}
