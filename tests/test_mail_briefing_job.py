@@ -1,5 +1,6 @@
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tools.install_mail_briefing_schedule import build_plist
 from tools.mail_briefing_job import (
@@ -8,6 +9,7 @@ from tools.mail_briefing_job import (
     ModelConfig,
     build_batch,
     compact_paragraphs,
+    deploy_batch,
     load_config,
     source_id_for,
 )
@@ -107,6 +109,18 @@ class MailBriefingJobTest(unittest.TestCase):
         self.assertEqual(value["StartCalendarInterval"], {"Hour": 8, "Minute": 0})
         self.assertIn("local-data/briefing/logs", value["StandardOutPath"])
         self.assertIn("mail_briefing_job.py", " ".join(value["ProgramArguments"]))
+
+    @patch("tools.mail_briefing_job.subprocess.run")
+    def test_deploy_batch_syncs_page_and_shared_theme(self, run):
+        config = load_config(EXAMPLE_CONFIG).deploy
+        batch_dir = ROOT / "local-data" / "briefing" / "sample-batch"
+
+        url = deploy_batch(batch_dir, config)
+
+        commands = [call.args[0] for call in run.call_args_list]
+        self.assertTrue(any(str(ROOT / "prototype" / "briefing" / "index.html") in command for command in commands))
+        self.assertTrue(any(str(ROOT / "prototype" / "theme.css") in command for command in commands))
+        self.assertTrue(url.endswith("/prototype/briefing/?batch=latest"))
 
 
 if __name__ == "__main__":

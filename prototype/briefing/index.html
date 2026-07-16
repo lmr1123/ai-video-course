@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="description" content="把多源 AI 内容变成可追溯的连续语音与文字速听卡。">
   <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <title>资讯速听 · AI Video Course</title>
   <style>
     :root{
-      --paper:oklch(96.8% .015 82);--paper-deep:oklch(91.8% .024 77);--surface:oklch(99% .008 82);
-      --ink:oklch(24% .018 62);--ink-soft:oklch(43% .022 66);--ink-faint:oklch(58% .018 70);
-      --red:oklch(48% .145 36);--red-soft:oklch(92.5% .035 45);--green:oklch(42% .08 165);
-      --focus:oklch(60% .14 42);--shadow:0 1.5rem 4rem oklch(24% .02 62/.13);
+      --paper:oklch(97.2% .014 92);--paper-cool:oklch(95.2% .018 210);--paper-deep:oklch(91.8% .022 86);--surface:oklch(99% .007 92);
+      --ink:oklch(23% .02 255);--ink-soft:oklch(43% .018 255);--ink-faint:oklch(60% .014 245);
+      --accent:oklch(61% .12 65);--accent-soft:oklch(94.5% .04 74);--red:oklch(49% .13 36);--red-soft:oklch(94% .035 45);--green:oklch(46% .095 160);
+      --focus:oklch(58% .12 70);--shadow:0 1.25rem 3.5rem oklch(23% .02 255/.12);
       --sans:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
       --mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
       --s1:.25rem;--s2:.5rem;--s3:.75rem;--s4:1rem;--s5:1.25rem;--s6:1.5rem;--s8:2rem;--s12:3rem;--s16:4rem;
@@ -19,46 +22,50 @@
     }
     *{box-sizing:border-box}
     html{scroll-behavior:smooth}
-    body{margin:0;background:var(--paper);color:var(--ink);font:400 1rem/1.78 var(--sans);font-kerning:normal;padding-bottom:max(10rem,calc(8rem + env(safe-area-inset-bottom)))}
+    body{margin:0;background:linear-gradient(180deg,var(--paper) 0%,oklch(97% .013 115) 58%,var(--paper-cool) 100%);color:var(--ink);font:400 1rem/1.78 var(--sans);font-kerning:normal;padding-bottom:max(10rem,calc(8rem + env(safe-area-inset-bottom)))}
     button,input,select{font:inherit;color:inherit}button,a,label{touch-action:manipulation}a{color:inherit}
     .skip{position:fixed;left:var(--s4);top:-5rem;background:var(--ink);color:var(--paper);padding:var(--s3) var(--s4);z-index:500;text-decoration:none;border-radius:.5rem}.skip:focus-visible{top:var(--s4)}
     .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
     :focus-visible{outline:3px solid var(--focus);outline-offset:3px}
     .masthead{max-width:72rem;margin:0 auto;padding:max(var(--s6),env(safe-area-inset-top)) clamp(1rem,4vw,3rem) var(--s4);display:flex;align-items:center;justify-content:space-between;gap:var(--s6)}
-    .brand{display:flex;align-items:baseline;gap:var(--s3);white-space:nowrap}.brand strong{font:800 1.125rem/1.2 var(--sans);letter-spacing:.03em}.brand em{font-style:normal;color:var(--red)}.brand span{font:500 .68rem/1 var(--mono);color:var(--ink-faint);letter-spacing:.08em}
+    .brand{display:flex;align-items:center;gap:var(--s3);white-space:nowrap}.brand strong{display:flex;align-items:center;gap:.55rem;font:800 1.125rem/1.2 var(--sans);letter-spacing:.01em}.brand strong::before{content:"";inline-size:2rem;block-size:2rem;border-radius:50%;background:radial-gradient(circle at 50% 50%,var(--accent) 0 .16rem,transparent .18rem),radial-gradient(circle at 28% 32%,oklch(70% .08 75) 0 .11rem,transparent .13rem),radial-gradient(circle at 72% 32%,oklch(68% .07 210) 0 .1rem,transparent .12rem),radial-gradient(circle at 33% 72%,oklch(62% .09 155) 0 .1rem,transparent .12rem),radial-gradient(circle at 70% 70%,oklch(64% .1 38) 0 .1rem,transparent .12rem),var(--surface);box-shadow:0 .35rem 1rem oklch(23% .02 255/.12)}.brand em{font-style:normal;color:var(--red)}.brand span{font:600 .68rem/1 var(--mono);color:var(--ink-faint);letter-spacing:.08em}.course-home{min-height:2.25rem;display:inline-flex;align-items:center;padding:.35rem .75rem;border-radius:999px;background:color-mix(in oklch,var(--surface) 76%,transparent);color:var(--ink-soft);text-decoration:none;font-size:.78rem;font-weight:750;box-shadow:0 .4rem 1.2rem oklch(23% .02 255/.045)}.course-home:hover{color:var(--red);background:var(--red-soft)}
     .batch-meta{min-width:0;text-align:right}.batch-meta b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.8125rem}.batch-meta span{display:block;color:var(--ink-faint);font:.72rem/1.5 var(--mono);font-variant-numeric:tabular-nums}
-    .shell{max-width:46rem;margin:0 auto;padding:clamp(2rem,6vw,5rem) clamp(1rem,5vw,3rem) var(--s16)}
-    .batch-intro{margin:0 0 var(--s8);max-width:42rem;color:var(--ink-soft);font:600 .92rem/1.8 var(--sans)}
-    .main{min-width:0}.item-meta{display:flex;align-items:center;flex-wrap:wrap;gap:.35rem var(--s2);color:var(--ink-faint);font:600 .75rem/1.5 var(--sans)}.item-meta #position{color:var(--red);font-family:var(--mono);font-variant-numeric:tabular-nums}.item-meta span+span::before{content:"·";margin-right:var(--s2);color:var(--paper-deep)}
+    .shell{max-width:48rem;margin:0 auto;padding:clamp(2rem,6vw,5rem) clamp(1rem,5vw,3rem) var(--s16)}
+    .batch-intro{margin:0 0 var(--s8);max-width:42rem;color:var(--ink-soft);font:600 .92rem/1.8 var(--sans);padding:var(--s4) var(--s5);background:color-mix(in oklch,var(--surface) 70%,transparent);border-radius:1.25rem;box-shadow:0 .6rem 2rem oklch(23% .02 255/.05)}
+    .main{min-width:0}.item-meta{display:flex;align-items:center;flex-wrap:wrap;gap:.45rem;color:var(--ink-faint);font:700 .72rem/1.3 var(--sans)}.item-meta span{display:inline-flex;align-items:center;min-height:1.8rem;padding:.28rem .62rem;background:color-mix(in oklch,var(--surface) 72%,transparent);border-radius:999px}.item-meta #position{color:var(--red);font-family:var(--mono);font-variant-numeric:tabular-nums;background:var(--accent-soft)}.item-meta span+span::before{content:none}
     .item-head{padding:var(--s4) 0 var(--s5)}.item-head h1{font:750 clamp(2.15rem,4.7vw,3.25rem)/1.2 var(--sans);letter-spacing:-.035em;margin:0;max-width:19ch;text-wrap:balance}
-    .essence{font:500 clamp(1.06rem,1.8vw,1.18rem)/1.82 var(--sans);max-width:40ch;margin:0 0 var(--s12);color:var(--ink-soft)}
-    .script{display:grid;gap:var(--s3)}.segment{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:var(--s2) var(--s4);padding:var(--s3) var(--s4);margin-inline:calc(var(--s4)*-1);border-radius:.85rem;cursor:pointer;transition:background 160ms var(--ease),transform 120ms var(--ease)}
-    .segment .marker{font:.68rem/1.7 var(--mono);color:var(--ink-faint);font-variant-numeric:tabular-nums}.segment p{font:450 1.0625rem/1.92 var(--sans);margin:0;max-width:48ch}.segment.active{background:color-mix(in oklch,var(--red-soft) 42%,transparent)}.segment.active p{font-weight:600}.segment.active .marker{color:var(--red)}
-    .segment:active{transform:scale(.995)}.label{display:block;font:600 .6rem/1.35 var(--sans);letter-spacing:.02em;color:inherit}.evidence{grid-column:2;display:flex;flex-wrap:wrap;gap:.15rem var(--s3);padding-top:.1rem}.evidence a{font-size:.74rem;line-height:1.55;text-decoration:none;color:var(--ink-faint)}.evidence a:hover{color:var(--red);text-decoration:underline;text-underline-offset:.16em}
-    .judgement{display:grid;grid-template-columns:1fr 1fr;gap:var(--s8);margin:var(--s12) 0 0}.judgement h2{font:700 .74rem/1.2 var(--sans);letter-spacing:.04em;margin:0 0 var(--s3);color:var(--ink-faint)}.judgement p{margin:0;font:650 1rem/1.78 var(--sans)}.caveats{margin:var(--s3) 0 0;padding-left:1.1rem;color:var(--ink-soft);font-size:.875rem}
-    .actions{display:flex;align-items:center;gap:var(--s2);flex-wrap:wrap;padding-top:var(--s6)}.btn,.file-label{min-height:2.75rem;border:0;background:transparent;padding:.55rem .8rem;cursor:pointer;text-decoration:none;font-weight:700;font-size:.875rem;display:inline-flex;align-items:center;justify-content:center;border-radius:.7rem;transition:background 140ms var(--ease),color 140ms var(--ease),transform 140ms var(--ease)}
-    .btn.primary{background:var(--ink);color:var(--paper);padding-inline:1rem}.btn.accent{color:var(--red);background:var(--red-soft)}.btn.saved{color:var(--green);background:color-mix(in oklch,var(--green) 12%,var(--surface))}.btn:active,.file-label:active{transform:scale(.97)}
-    @media(hover:hover){.btn:not(.primary):hover,.file-label:hover{background:var(--paper-deep)}.btn.primary:hover{background:var(--red)}.segment:not(.active):hover{background:color-mix(in oklch,var(--paper-deep) 40%,transparent)}}
+    .essence{font:500 clamp(1.06rem,1.8vw,1.18rem)/1.82 var(--sans);max-width:40ch;margin:0 0 var(--s8);color:var(--ink-soft)}
+    .script{display:grid;gap:var(--s3)}.segment{display:grid;grid-template-columns:2rem minmax(0,1fr);gap:var(--s2) var(--s4);padding:var(--s4);margin-inline:calc(var(--s4)*-1);border-radius:1.2rem;cursor:pointer;background:color-mix(in oklch,var(--surface) 56%,transparent);box-shadow:0 .45rem 1.6rem oklch(23% .02 255/.045);transition:background 160ms var(--ease),transform 120ms var(--ease),box-shadow 160ms var(--ease)}
+    .segment .marker{font:.68rem/1.7 var(--mono);color:var(--ink-faint);font-variant-numeric:tabular-nums}.segment p{font:450 1.0525rem/1.88 var(--sans);margin:0;max-width:48ch}.segment.active{background:linear-gradient(135deg,color-mix(in oklch,var(--accent-soft) 86%,var(--surface)),color-mix(in oklch,var(--surface) 84%,var(--paper-cool)));box-shadow:0 .75rem 2.1rem oklch(23% .02 255/.075)}.segment.active p{font-weight:620}.segment.active .marker{color:var(--red)}
+    .segment:active{transform:scale(.995)}.label{display:block;font:700 .6rem/1.35 var(--sans);letter-spacing:.02em;color:inherit}.evidence{grid-column:2;display:grid;gap:.45rem;padding-top:.15rem}.source-evidence{max-width:48ch}.source-evidence summary{width:max-content;max-width:100%;list-style:none;cursor:pointer;font-size:.74rem;line-height:1.55;color:var(--ink-faint);padding:.1rem .5rem;background:color-mix(in oklch,var(--paper-cool) 62%,transparent);border-radius:999px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.source-evidence summary::-webkit-details-marker{display:none}.source-evidence[open]>summary{color:var(--red);background:var(--red-soft)}.source-excerpt{margin:.55rem 0 0;padding:var(--s3);border-radius:.9rem;background:color-mix(in oklch,var(--surface) 78%,transparent);box-shadow:0 .35rem 1rem oklch(23% .02 255/.04)}.source-origin{margin:0 0 .45rem;color:var(--ink-faint);font:700 .72rem/1.5 var(--sans)}.source-excerpt p{margin:0;color:var(--ink-soft);font:450 .86rem/1.75 var(--sans);max-width:none}.source-original{margin-top:.55rem}.source-original summary{width:max-content;background:transparent;color:var(--ink-faint);padding:0;font-size:.76rem;font-weight:700}.source-original[open] summary{color:var(--ink-soft)}.source-original p{margin:.35rem 0 0;color:var(--ink-faint);font-size:.78rem;line-height:1.65}.source-excerpt a{display:inline-flex;margin-top:.45rem;color:var(--red);font-size:.76rem;font-weight:700;text-decoration:none}.source-excerpt a:hover{text-decoration:underline}
+    .judgement{display:grid;grid-template-columns:1fr 1fr;gap:var(--s4);margin:var(--s8) 0 0}.judgement>div{background:color-mix(in oklch,var(--surface) 72%,transparent);border-radius:1.25rem;padding:var(--s5);box-shadow:0 .6rem 2rem oklch(23% .02 255/.05)}.judgement h2{font:750 .74rem/1.2 var(--sans);letter-spacing:.04em;margin:0 0 var(--s3);color:var(--ink-faint)}.judgement p{margin:0;font:650 1rem/1.78 var(--sans)}.caveats{margin:var(--s3) 0 0;padding-left:1.1rem;color:var(--ink-soft);font-size:.875rem}
+    .btn,.file-label{min-height:2.75rem;border:0;background:transparent;padding:.55rem .8rem;cursor:pointer;text-decoration:none;font-weight:700;font-size:.875rem;display:inline-flex;align-items:center;justify-content:center;border-radius:.7rem;transition:background 140ms var(--ease),color 140ms var(--ease),transform 140ms var(--ease)}
+    .btn:active,.file-label:active{transform:scale(.97)}
+    @media(hover:hover){.btn:hover,.file-label:hover{background:var(--paper-deep)}.segment:not(.active):hover{background:color-mix(in oklch,var(--paper-deep) 40%,transparent)}}
     #file{position:absolute;inline-size:1px;block-size:1px;opacity:0;pointer-events:none}
-    .transport{position:fixed;left:50%;bottom:max(var(--s4),env(safe-area-inset-bottom));z-index:300;width:min(60rem,calc(100% - 2rem));transform:translateX(-50%);background:var(--surface);padding:var(--s3);display:grid;grid-template-columns:auto minmax(8rem,1fr) auto;gap:var(--s4);align-items:center;border-radius:1.25rem;box-shadow:var(--shadow)}
+    .transport{position:fixed;left:50%;bottom:max(var(--s4),env(safe-area-inset-bottom));z-index:300;width:min(60rem,calc(100% - 2rem));transform:translateX(-50%);background:color-mix(in oklch,var(--surface) 88%,transparent);padding:var(--s3);display:grid;grid-template-columns:auto minmax(8rem,1fr) auto;gap:var(--s4);align-items:center;border-radius:1.6rem;box-shadow:var(--shadow);backdrop-filter:blur(18px)}
     .transport-controls{display:flex;align-items:center;gap:var(--s1)}.transport button,.transport select{min-width:2.75rem;min-height:2.75rem;border:0;background:transparent;color:var(--ink);cursor:pointer;border-radius:999px}.transport .play{background:var(--ink);color:var(--paper);font-weight:900;font-size:1rem}.transport select{min-width:4.25rem;padding-inline:.65rem;color:var(--ink-soft)}
     .transport-info{min-width:0}.now-line{display:flex;align-items:center;gap:var(--s3);min-width:0}.transport-info b{display:block;font:700 .8125rem/1.4 var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.transport-status{margin-left:auto;white-space:nowrap;font:.68rem/1.4 var(--mono);color:var(--ink-faint);font-variant-numeric:tabular-nums}
-    .progress-track{height:.32rem;margin-top:var(--s2);position:relative;display:flex;isolation:isolate;overflow:hidden;border-radius:999px;background:var(--paper-deep)}.timeline-part{display:block!important;min-width:.25rem!important;min-height:0!important;height:.32rem!important;padding:0!important;background:transparent!important;border-radius:0!important;position:relative;z-index:2}.timeline-part.current{background:color-mix(in oklch,var(--red) 10%,transparent)!important}.progress-fill{position:absolute;z-index:3;pointer-events:none;inset:0 auto 0 0;width:0;background:var(--red);transition:width 180ms var(--ease)}
-    .queue-toggle{display:flex!important;align-items:center;gap:.35rem;min-width:auto!important;padding:0 .85rem!important;background:var(--paper)!important;border-radius:.75rem!important;font-size:.75rem;font-weight:650}.queue-toggle b{font-family:var(--mono);font-size:.72rem}.queue-toggle::after{content:"⌃";color:var(--ink-faint)}
-    .queue-panel{position:fixed;inset:auto max(1rem,calc((100vw - 60rem)/2)) calc(max(var(--s4),env(safe-area-inset-bottom)) + 5.75rem) auto;width:min(38rem,calc(100vw - 2rem));max-height:min(60vh,36rem);margin:0;padding:var(--s4);border:0;border-radius:1.25rem;background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}.queue-panel::backdrop{background:transparent}.queue-panel-head{display:flex;align-items:center;justify-content:space-between;padding:var(--s2) var(--s2) var(--s3)}.queue-panel h2{font:750 1rem/1.3 var(--sans);margin:0}.queue-close{min-width:2.75rem;min-height:2.75rem;border:0;border-radius:999px;background:var(--paper);cursor:pointer}.queue-list{list-style:none;padding:0;margin:0;display:grid;gap:var(--s1);overflow:auto;max-height:calc(min(60vh,36rem) - 4.5rem);scrollbar-color:var(--paper-deep) transparent}.queue-button{width:100%;min-height:4.5rem;border:0;background:transparent;text-align:left;padding:var(--s3);cursor:pointer;display:grid;grid-template-columns:2.25rem minmax(0,1fr);gap:var(--s3);border-radius:.85rem;transition:background 140ms var(--ease)}.queue-button .num{font:.72rem/1.5 var(--mono);color:var(--ink-faint)}.queue-button b{display:block;font:700 .875rem/1.5 var(--sans)}.queue-button small{display:block;margin-top:.2rem;color:var(--ink-faint);font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.queue-item.current .queue-button{background:var(--red-soft)}.queue-item.current .num{color:var(--red)}.queue-item.saved small{color:var(--green)}
+    .progress-track{height:.36rem;margin-top:var(--s2);position:relative;display:flex;isolation:isolate;overflow:hidden;border-radius:999px;background:color-mix(in oklch,var(--paper-deep) 72%,var(--paper-cool))}.timeline-part{display:block!important;min-width:.25rem!important;min-height:0!important;height:.36rem!important;padding:0!important;background:transparent!important;border-radius:0!important;position:relative;z-index:2}.timeline-part.current{background:color-mix(in oklch,var(--accent) 16%,transparent)!important}.progress-fill{position:absolute;z-index:3;pointer-events:none;inset:0 auto 0 0;width:0;background:linear-gradient(90deg,var(--accent),var(--green));transition:width 180ms var(--ease)}
+    .queue-toggle{display:flex!important;align-items:center;gap:.35rem;min-width:auto!important;padding:0 .85rem!important;background:var(--accent-soft)!important;border-radius:1rem!important;font-size:.75rem;font-weight:700}.queue-toggle b{font-family:var(--mono);font-size:.72rem}.queue-toggle::after{content:"⌃";color:var(--ink-faint)}
+    .queue-panel{position:fixed;inset:auto max(1rem,calc((100vw - 60rem)/2)) calc(max(var(--s4),env(safe-area-inset-bottom)) + 5.75rem) auto;width:min(38rem,calc(100vw - 2rem));max-height:min(60vh,36rem);margin:0;padding:var(--s4);border:0;border-radius:1.25rem;background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}.queue-panel::backdrop{background:transparent}.queue-panel-head{display:flex;align-items:center;justify-content:space-between;padding:var(--s2) var(--s2) var(--s3)}.queue-panel h2{font:750 1rem/1.3 var(--sans);margin:0}.queue-close{min-width:2.75rem;min-height:2.75rem;border:0;border-radius:999px;background:var(--paper);cursor:pointer}.queue-list{list-style:none;padding:0;margin:0;display:grid;gap:var(--s1);overflow:auto;max-height:calc(min(60vh,36rem) - 4.5rem);scrollbar-color:var(--paper-deep) transparent}.queue-button{width:100%;min-height:4.5rem;border:0;background:transparent;text-align:left;padding:var(--s3);cursor:pointer;display:grid;grid-template-columns:2.25rem minmax(0,1fr);gap:var(--s3);border-radius:.85rem;transition:background 140ms var(--ease)}.queue-button .num{font:.72rem/1.5 var(--mono);color:var(--ink-faint)}.queue-button b{display:block;font:700 .875rem/1.5 var(--sans)}.queue-button small{display:block;margin-top:.2rem;color:var(--ink-faint);font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.queue-item.current .queue-button{background:var(--red-soft)}.queue-item.current .num{color:var(--red)}
     @media(hover:hover){.transport button:hover,.transport select:hover,.queue-button:hover,.queue-close:hover{background:var(--paper-deep)}}
     .error{max-width:36rem;margin:12vh auto;padding:var(--s8);background:var(--surface);border-radius:1rem}.error h1{font:750 2rem/1.3 var(--sans)}.error p{color:var(--ink-soft)}
     [hidden]{display:none!important}
     @media(max-width:700px){
-      .masthead{align-items:flex-start;padding-inline:var(--s4)}.brand span{display:none}.batch-meta{max-width:50%}.shell{padding:var(--s8) var(--s4) var(--s12)}.item-head{padding-top:var(--s3)}.item-head h1{font-size:clamp(2rem,9.6vw,2.65rem);line-height:1.22}.essence{margin-bottom:var(--s8);font-size:1rem}.segment{margin-inline:calc(var(--s2)*-1);padding:var(--s3) var(--s2);grid-template-columns:1.75rem minmax(0,1fr);gap:var(--s2)}.segment p{font-size:1rem;line-height:1.86}.evidence{grid-column:2}.judgement{grid-template-columns:1fr;gap:var(--s6);margin:var(--s8) 0 0}.actions{display:grid;grid-template-columns:1fr 1fr}.actions>*{width:100%}.transport{bottom:max(var(--s2),env(safe-area-inset-bottom));width:calc(100% - 1rem);grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s2);padding:var(--s2);border-radius:1rem}.transport-controls{gap:0}.transport-controls select,.transport-controls #previous,.transport-controls #next{display:none}.transport-info b{font-size:.75rem}.transport-status{display:none}.queue-toggle{padding-inline:.65rem!important}.queue-toggle span{display:none}.queue-panel{inset:auto .5rem calc(max(var(--s2),env(safe-area-inset-bottom)) + 5rem);width:calc(100% - 1rem);max-height:60vh;border-radius:1rem}.queue-button{min-height:4.75rem}}
+      .masthead{align-items:flex-start;padding-inline:var(--s4)}.brand span{display:none}.brand strong::before{inline-size:1.8rem;block-size:1.8rem}.course-home,.masthead .file-label{font-size:.74rem;padding-inline:.62rem}.masthead .history-home{display:none}.batch-meta{max-width:45%}.shell{padding:var(--s8) var(--s4) var(--s12)}.batch-intro{padding:var(--s4);border-radius:1rem}.item-head{padding-top:var(--s3)}.item-head h1{font-size:clamp(2rem,9.6vw,2.65rem);line-height:1.22}.essence{margin-bottom:var(--s8);font-size:1rem}.segment{margin-inline:0;padding:var(--s4);grid-template-columns:1.75rem minmax(0,1fr);gap:var(--s2);border-radius:1rem}.segment p{font-size:1rem;line-height:1.86}.evidence{grid-column:2}.source-evidence{max-width:100%}.source-evidence summary{width:100%}.judgement{grid-template-columns:1fr;gap:var(--s4);margin:var(--s8) 0 0}.judgement>div{padding:var(--s4);border-radius:1rem}.transport{bottom:max(var(--s2),env(safe-area-inset-bottom));width:calc(100% - 1rem);grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s2);padding:var(--s2);border-radius:1.25rem}.transport-controls{gap:0}.transport-controls select,.transport-controls #previous,.transport-controls #next{display:none}.transport-info b{font-size:.75rem}.transport-status{display:none}.queue-toggle{padding-inline:.65rem!important}.queue-toggle span{display:none}.queue-panel{inset:auto .5rem calc(max(var(--s2),env(safe-area-inset-bottom)) + 5rem);width:calc(100% - 1rem);max-height:60vh;border-radius:1rem}.queue-button{min-height:4.75rem}}
     @media(pointer:coarse){.queue-button,.btn,.file-label,.transport button,.transport select,.queue-close{min-height:3rem}}
     @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important}}
   </style>
+  <link rel="stylesheet" href="../theme.css">
 </head>
-<body>
+<body class="page-briefing">
   <a class="skip" href="#main">跳到当前资讯</a>
   <header class="masthead">
     <div class="brand"><strong>资讯<em>速听</em></strong><span>TRACEABLE BRIEFING</span></div>
+    <a class="course-home" href="../index.html">视频课堂</a>
+    <a class="course-home history-home" href="../history/index.html">历史记录</a>
+    <label class="file-label" for="file">导入</label><input id="file" type="file" accept="application/json,.json">
     <div class="batch-meta"><b id="batch-title">正在读取内容包</b><span id="batch-summary">—</span></div>
   </header>
 
@@ -74,12 +81,6 @@
           <div><h2>为什么值得注意</h2><p id="why"></p></div>
           <div><h2>下一步</h2><p id="action-reason"></p><ul class="caveats" id="caveats"></ul></div>
         </section>
-        <div class="actions">
-          <button class="btn accent" id="save" type="button">收藏这条</button>
-          <a class="btn" id="original" target="_blank" rel="noopener">打开原文</a>
-          <a class="btn primary" id="deepen" target="_blank" rel="noopener">讲深一点</a>
-          <label class="file-label" for="file">导入内容包</label><input id="file" type="file" accept="application/json,.json">
-        </div>
       </main>
     </div>
   </div>
@@ -109,7 +110,6 @@
     const TYPE_LABELS={news:"新闻",product:"产品",model:"模型",paper:"论文",opinion:"观点",tutorial:"教程",interview:"访谈"};
     const ACTION_LABELS={open:"建议打开原文",save:"建议收藏",skip:"可以跳过",deepen:"建议深入",verify:"建议查证"};
     let batch=null,itemIndex=0,segmentIndex=0,phase="segment",playing=false,audio=null,utterance=null;
-    const saved=new Set(JSON.parse(localStorage.getItem("briefing:saved")||"[]"));
 
     function esc(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
     function safeHref(value){try{const url=new URL(value,location.origin);return ["http:","https:"].includes(url.protocol)?url.href:"#"}catch{return "#"}}
@@ -123,6 +123,7 @@
     }
     function sourceById(id){return batch.sources.find(source=>source.source_id===id)}
     function sourceLabel(item){const source=sourceById(item.source_ids[0]);return source?.author||source?.title||"未知来源"}
+    function originalLabel(source){return source?.kind==="email"?"打开原邮件":"打开原文"}
     function totalSegments(){return batch.items.reduce((sum,item)=>sum+item.spoken_segments.length,0)}
     function totalUnits(){return(batch.intro_text?1:0)+batch.items.reduce((sum,item)=>sum+item.spoken_segments.length+(item.transition_text?1:0),0)}
     function completedUnits(){
@@ -137,21 +138,29 @@
       const resolved=batchId?`../../local-data/briefing/${encodeURIComponent(batchId)}/${path}`:path;
       return batch?.generated_at?`${resolved}?v=${encodeURIComponent(batch.generated_at)}`:resolved;
     }
-    function storeSaved(){localStorage.setItem("briefing:saved",JSON.stringify([...saved]))}
     function updateProgress(fraction=0){const pct=totalUnits()?100*(completedUnits()+fraction)/totalUnits():0;$("progress").style.width=`${Math.min(100,pct)}%`}
 
     function renderQueue(){
-      $("queue").innerHTML=batch.items.map((item,index)=>{const source=sourceById(item.source_ids[0]);return`<li class="queue-item ${index===itemIndex?"current":""} ${saved.has(item.item_id)?"saved":""}"><button class="queue-button" type="button" data-index="${index}" ${index===itemIndex?'aria-current="true"':""}><span class="num">${String(index+1).padStart(2,"0")}</span><span><b>${esc(item.title)}</b><small>${esc(formatDate(source?.published_at))} · ${esc(item.essence)}${saved.has(item.item_id)?" · 已收藏":""}</small></span></button></li>`}).join("");
+      $("queue").innerHTML=batch.items.map((item,index)=>{const source=sourceById(item.source_ids[0]);return`<li class="queue-item ${index===itemIndex?"current":""}"><button class="queue-button" type="button" data-index="${index}" ${index===itemIndex?'aria-current="true"':""}><span class="num">${String(index+1).padStart(2,"0")}</span><span><b>${esc(item.title)}</b><small>${esc(formatDate(source?.published_at))} · ${esc(item.essence)}</small></span></button></li>`}).join("");
       $("timeline").innerHTML=batch.items.map((item,index)=>`<button class="timeline-part ${index===itemIndex?"current":""}" type="button" data-timeline-index="${index}" style="flex-grow:${item.spoken_segments.length+(item.transition_text?1:0)}" aria-label="跳到第 ${index+1} 条：${esc(item.title)}" title="${esc(item.title)}"></button>`).join("")+`<div class="progress-fill" id="progress"></div>`;
+    }
+    function renderEvidence(ref){
+      const refSource=sourceById(ref.source_id),href=safeHref(ref.url),label=`${ref.label} · ${formatDate(refSource?.published_at)}`;
+      const origin=refSource?.author||refSource?.title;
+      const originLine=origin?`<div class="source-origin">来信来源：${esc(origin)}</div>`:"";
+      if(ref.excerpt||ref.excerpt_zh){
+        const readable=ref.excerpt_zh||ref.excerpt;
+        const original=ref.excerpt_zh&&ref.excerpt?`<details class="source-original"><summary>英文原文</summary><p>${esc(ref.excerpt)}</p></details>`:"";
+        return`<details class="source-evidence"><summary>来源内容 · ${esc(label)}</summary><div class="source-excerpt">${originLine}<p>${esc(readable)}</p>${original}<a href="${esc(href)}" target="_blank" rel="noopener">${esc(originalLabel(refSource))} ↗</a></div></details>`;
+      }
+      return`<details class="source-evidence"><summary>来源内容 · ${esc(label)}</summary><div class="source-excerpt">${originLine}<p>当前内容包没有保存这段来源摘录。</p><a href="${esc(href)}" target="_blank" rel="noopener">${esc(originalLabel(refSource))} ↗</a></div></details>`;
     }
     function renderItem(){
       const item=currentItem(),source=sourceById(item.source_ids[0]);
       $("position").textContent=`${String(itemIndex+1).padStart(2,"0")} / ${String(batch.items.length).padStart(2,"0")}`;
       $("source-name").textContent=sourceLabel(item);$("item-title").textContent=item.title;$("content-type").textContent=TYPE_LABELS[item.content_type]||item.content_type;$("published-at").textContent=`邮件 ${formatDate(source?.published_at)}`;$("essence").textContent=item.essence;
-      $("script").innerHTML=item.spoken_segments.map((segment,index)=>`<article class="segment ${phase==="segment"&&index===segmentIndex?"active":""}" data-segment="${index}" tabindex="0"><span class="marker">${String(index+1).padStart(2,"0")}<span class="label ${segment.attribution==="AI"?"ai":""}">${segment.attribution==="AI"?"AI 判断":"来源"}</span></span><p>${esc(segment.text)}</p><div class="evidence">${segment.source_refs.map(ref=>{const refSource=sourceById(ref.source_id);return`<a href="${esc(safeHref(ref.url))}" target="_blank" rel="noopener">${esc(ref.label)} · ${esc(formatDate(refSource?.published_at))} ↗</a>`}).join("")}</div></article>`).join("");
+      $("script").innerHTML=item.spoken_segments.map((segment,index)=>`<article class="segment ${phase==="segment"&&index===segmentIndex?"active":""}" data-segment="${index}" tabindex="0"><span class="marker">${String(index+1).padStart(2,"0")}<span class="label ${segment.attribution==="AI"?"ai":""}">${segment.attribution==="AI"?"AI 判断":"来源"}</span></span><p>${esc(segment.text)}</p><div class="evidence">${segment.source_refs.map(renderEvidence).join("")}</div></article>`).join("");
       $("why").textContent=item.why_it_matters;$("action-reason").textContent=`${ACTION_LABELS[item.suggested_action]}：${item.action_reason}`;$("caveats").innerHTML=item.caveats.map(value=>`<li>${esc(value)}</li>`).join("");
-      $("original").href=safeHref(source?.url||item.spoken_segments[0].source_refs[0].url);$("deepen").href=safeHref(item.course_url||$("original").href);$("deepen").textContent=item.course_url?"进入课程":"讲深一点";
-      $("save").classList.toggle("saved",saved.has(item.item_id));$("save").textContent=saved.has(item.item_id)?"已收藏":"收藏这条";
       $("now-title").textContent=phase==="intro"?batch.title:phase==="transition"?`下一条 · ${item.title}`:item.title;
       $("segment-position").textContent=phase==="intro"?"本批导览":phase==="transition"?`第 ${itemIndex+1} 条报幕`:`${segmentIndex+1}/${item.spoken_segments.length} 句`;
       renderQueue();updateProgress();
@@ -187,11 +196,10 @@
     $("queue").addEventListener("click",event=>{const button=event.target.closest("[data-index]");if(!button)return;selectItem(Number(button.dataset.index));if(typeof $("queue-panel").hidePopover==="function")$("queue-panel").hidePopover()});
     $("timeline").addEventListener("click",event=>{const button=event.target.closest("[data-timeline-index]");if(button)selectItem(Number(button.dataset.timelineIndex))});
     $("queue-panel").addEventListener("toggle",event=>{const open=event.newState==="open";$("queue-toggle").setAttribute("aria-expanded",String(open));if(open)requestAnimationFrame(()=>$("queue").querySelector(".current")?.scrollIntoView({block:"nearest"}))});
-    $("script").addEventListener("click",event=>{const node=event.target.closest("[data-segment]");if(!node||event.target.closest("a"))return;const autoplay=playing;stopPlayback();phase="segment";segmentIndex=Number(node.dataset.segment);renderItem();if(autoplay)startPlayback()});
-    $("script").addEventListener("keydown",event=>{if(!["Enter"," "].includes(event.key)||event.target.closest("a"))return;event.preventDefault();event.target.click()});
+    $("script").addEventListener("click",event=>{const node=event.target.closest("[data-segment]");if(!node||event.target.closest("a,.source-evidence"))return;const autoplay=playing;stopPlayback();phase="segment";segmentIndex=Number(node.dataset.segment);renderItem();if(autoplay)startPlayback()});
+    $("script").addEventListener("keydown",event=>{if(!["Enter"," "].includes(event.key)||event.target.closest("a,.source-evidence"))return;event.preventDefault();event.target.click()});
     $("play").addEventListener("click",()=>playing?stopPlayback():startPlayback());$("previous").addEventListener("click",()=>selectItem(itemIndex-1));$("next").addEventListener("click",()=>selectItem(itemIndex+1));
     $("speed").addEventListener("change",()=>{if(audio)audio.playbackRate=Number($("speed").value);if(playing&&utterance){const index=segmentIndex;stopPlayback();segmentIndex=index;startPlayback()}});
-    $("save").addEventListener("click",()=>{const id=currentItem().item_id;saved.has(id)?saved.delete(id):saved.add(id);storeSaved();renderItem()});
     function importFile(file){const reader=new FileReader();reader.onload=()=>{try{loadBatch(JSON.parse(reader.result))}catch(error){showError(error)}};reader.onerror=()=>showError(Error("本地文件读取失败"));reader.readAsText(file)}
     [$("file"),$("file-error")].forEach(input=>input.addEventListener("change",()=>{if(input.files[0])importFile(input.files[0])}));
     document.addEventListener("keydown",event=>{if(event.target.matches("input,select,textarea,button,a,label,[tabindex]"))return;if(event.code==="Space"){event.preventDefault();playing?stopPlayback():startPlayback()}if(event.key==="ArrowRight")selectItem(itemIndex+1);if(event.key==="ArrowLeft")selectItem(itemIndex-1)});

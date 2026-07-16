@@ -338,10 +338,12 @@ def deploy_batch(batch_dir: Path, config: DeployConfig) -> str:
     root = config.remote_root
     host = config.ssh_host
     subprocess.run(["ssh", host, "mkdir", "-p", f"{root}/prototype/briefing", f"{root}/local-data/briefing"], check=True)
-    subprocess.run(
-        ["rsync", "-az", str(ROOT / "prototype" / "briefing" / "index.html"), f"{host}:{root}/prototype/briefing/index.html"],
-        check=True,
+    page_assets = (
+        (ROOT / "prototype" / "briefing" / "index.html", f"{root}/prototype/briefing/index.html"),
+        (ROOT / "prototype" / "theme.css", f"{root}/prototype/theme.css"),
     )
+    for local_path, remote_path in page_assets:
+        subprocess.run(["rsync", "-az", str(local_path), f"{host}:{remote_path}"], check=True)
     subprocess.run(["rsync", "-az", "--delete", f"{batch_dir}/", f"{host}:{root}/local-data/briefing/{batch_dir.name}/"], check=True)
     subprocess.run(
         ["ssh", host, "ln", "-sfn", batch_dir.name, f"{root}/local-data/briefing/latest"],
