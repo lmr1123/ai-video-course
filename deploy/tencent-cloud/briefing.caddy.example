@@ -20,13 +20,19 @@ https://REPLACE_WITH_PUBLIC_IP {
 	tls /etc/caddy/certs/ai-briefing-fullchain.pem /etc/caddy/certs/ai-briefing-privkey.pem
 	encode gzip
 
-	basicauth {
-		briefing REPLACE_WITH_CADDY_PASSWORD_HASH
-	}
-
-	root * /home/ubuntu/ai-briefing-site
-	file_server
-
 	@private_json path *.json
 	header @private_json Cache-Control "no-store"
+
+	handle_path /auth/* {
+		reverse_proxy 127.0.0.1:8793
+	}
+
+	handle {
+		forward_auth 127.0.0.1:8793 {
+			uri /verify
+		}
+
+		root * /home/ubuntu/ai-briefing-site
+		file_server
+	}
 }

@@ -1,0 +1,17 @@
+[Unit]
+Description=AI Briefing signed-cookie session service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+EnvironmentFile=/etc/ai-briefing-session.env
+ExecStart=/usr/bin/python3 /home/ubuntu/ai-briefing-site/tools/briefing_session_server.py
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
