@@ -118,6 +118,7 @@ class MailBriefingJobTest(unittest.TestCase):
         url = deploy_batch(batch_dir, config)
 
         commands = [call.args[0] for call in run.call_args_list]
+        self.assertTrue(any(str(ROOT / "prototype" / "index.html") in command for command in commands))
         self.assertTrue(any(str(ROOT / "prototype" / "briefing" / "index.html") in command for command in commands))
         self.assertTrue(any(str(ROOT / "prototype" / "theme.css") in command for command in commands))
         self.assertTrue(url.endswith("/prototype/briefing/?batch=latest"))

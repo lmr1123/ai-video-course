@@ -94,6 +94,13 @@ header{
 .player-frame iframe,#yt-player{position:absolute;inset:0;width:100%;height:100%;border:0}
 .subtitle-box{min-height:42px;padding:8px 14px;background:#000;color:#fff;text-align:center;font-size:14px;font-weight:700;line-height:1.6}
 .subtitle-box:empty::after{content:"中文字幕";color:#666;font-size:11px;font-weight:400}
+.file-mode-note{display:none;margin:12px 2px 0;padding:10px 12px;background:var(--ochre-soft);color:var(--ink-soft);font-size:12px;line-height:1.7}
+.file-mode-note.show{display:block}
+.file-mode-note a{color:var(--vermilion);font-weight:700;text-decoration:none}
+.file-mode-gate{position:absolute;inset:0;display:grid;place-content:center;gap:12px;padding:24px;text-align:center;background:var(--ink);color:var(--paper)}
+.file-mode-gate strong{font-family:var(--serif);font-size:18px}
+.file-mode-gate span{max-width:380px;color:#d7d1c7;font-size:12.5px;line-height:1.7}
+.file-mode-gate a{justify-self:center;padding:9px 16px;background:var(--vermilion);color:#fff;text-decoration:none;font-size:13px;font-weight:700}
 .now-playing{
   display:flex;justify-content:space-between;align-items:baseline;gap:12px;
   font-size:12px;color:var(--ink-soft);margin:12px 2px 0;
@@ -269,8 +276,9 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
   .qa{padding:15px 14px}.recall{padding:20px 16px}
 }
 </style>
+<link rel="stylesheet" href="theme.css">
 </head>
-<body>
+<body class="page-course">
 
 <header>
   <div class="hd-inner">
@@ -282,7 +290,9 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
       <input id="url-input" type="text" placeholder="粘贴 YouTube 链接，例如 https://youtu.be/P3KDebPTUrw" spellcheck="false">
       <button id="go-btn">生成课程</button>
     </div>
-    <a class="hd-mode" href="relecture/">🎧 重讲课</a>
+    <a class="hd-mode" href="briefing/index.html">资讯速听</a>
+    <a class="hd-mode" href="history/index.html">历史记录</a>
+    <a class="hd-mode" href="relecture/index.html">🎧 重讲课</a>
     <span class="hd-note">原型 · 仅含 1 条已生成课程</span>
   </div>
 </header>
@@ -307,6 +317,7 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
 <div class="wrap" id="course">
   <div class="left">
     <div class="player-frame"><div class="ratio"><div id="yt-player"></div></div><div class="subtitle-box" id="subtitle-box" aria-live="polite"></div></div>
+    <div class="file-mode-note" id="file-mode-note">YouTube 现在要求嵌入页面提供可识别的网页来源，直接打开本地文件无法播放。请使用 <a id="local-course-link" href="http://127.0.0.1:8737/prototype/index.html?t=0">本地服务版视频课堂</a>。</div>
     <div class="now-playing">
       <span>英文使用 YouTube 字幕 · <button class="subtitle-toggle" id="subtitle-toggle" type="button">关闭中文字幕</button></span>
       <span class="t" id="now-t">00:00:00</span>
@@ -582,6 +593,9 @@ const $ = id => document.getElementById(id);
 let player = null, playerReady = false, pendingSeek = null;
 let curMap = null;
 let subtitles = [], subtitlesOn = true;
+let currentVideoId = null;
+const isFileMode = location.protocol === "file:";
+const localCourseUrl = t => `http://127.0.0.1:8737/prototype/index.html?t=${Math.max(0,Math.floor(t||0))}`;
 
 function parseVideoId(url){
   const m = url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([\w-]{11})/) || url.match(/^([\w-]{11})$/);
@@ -597,6 +611,7 @@ function show(view){
 function loadCourse(vid){
   const data = COURSES[vid];
   if(!data){ show("miss"); return; }
+  currentVideoId = vid;
   curMap = data.map;
   renderMap(data.map);
   loadSubtitles(vid);
@@ -659,6 +674,12 @@ function syncPlayback(){
   if(active && window.innerWidth>1020 && !active.matches(":hover")) active.scrollIntoView({block:"nearest"});
 }
 async function loadSubtitles(vid){
+  if(isFileMode){
+    subtitles=[];
+    $("subtitle-toggle").textContent="本地文件模式不支持中文字幕同步";
+    $("subtitle-toggle").disabled=true;
+    return;
+  }
   try{subtitles=await fetch(`subtitles/${vid}.bilingual.json`).then(r=>{if(!r.ok)throw Error(r.status);return r.json()})}
   catch(e){subtitles=[];$("subtitle-toggle").textContent="字幕不可用";$("subtitle-toggle").disabled=true}
 }
@@ -674,10 +695,16 @@ $("subtitle-toggle").addEventListener("click",()=>{
 });
 function initPlayer(vid){
   if(player){ player.cueVideoById(vid); return; }
+  if(isFileMode){
+    $("file-mode-note").classList.add("show");
+    $("local-course-link").href = localCourseUrl(pendingSeek);
+    $("yt-player").innerHTML = `<div class="file-mode-gate"><strong>视频需要通过本地服务播放</strong><span>当前页面是 file:// 本地文件，无法向 YouTube 提供播放所需的网页来源。</span><a href="${localCourseUrl(pendingSeek)}">打开可播放页面</a></div>`;
+    return;
+  }
   const boot = () => {
     player = new YT.Player("yt-player", {
       videoId: vid,
-      playerVars: {rel:0, modestbranding:1, cc_load_policy:1, cc_lang_pref:"en"},
+      playerVars: {rel:0, modestbranding:1, cc_load_policy:1, cc_lang_pref:"en", origin:location.origin},
       events: {
         onReady: () => {
           playerReady = true;
@@ -703,6 +730,10 @@ function fmt(sec){
   return `${h}:${m}:${s}`;
 }
 function seek(t){
+  if(isFileMode){
+    location.href = localCourseUrl(t);
+    return;
+  }
   if(!playerReady){ pendingSeek=t; return; }
   player.seekTo(t, true);
   player.playVideo();

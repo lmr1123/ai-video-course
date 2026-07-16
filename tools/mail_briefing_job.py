@@ -339,6 +339,7 @@ def deploy_batch(batch_dir: Path, config: DeployConfig) -> str:
     host = config.ssh_host
     subprocess.run(["ssh", host, "mkdir", "-p", f"{root}/prototype/briefing", f"{root}/local-data/briefing"], check=True)
     page_assets = (
+        (ROOT / "prototype" / "index.html", f"{root}/prototype/index.html"),
         (ROOT / "prototype" / "briefing" / "index.html", f"{root}/prototype/briefing/index.html"),
         (ROOT / "prototype" / "theme.css", f"{root}/prototype/theme.css"),
     )
