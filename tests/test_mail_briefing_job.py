@@ -95,6 +95,25 @@ class MailBriefingJobTest(unittest.TestCase):
         self.assertEqual(config.schedule.hour, 8)
         self.assertTrue(config.deploy.public_url.startswith("https://"))
 
+    def test_deploy_syncs_current_briefing_and_all_linked_pages(self):
+        config = load_config(EXAMPLE_CONFIG).deploy
+        with tempfile.TemporaryDirectory() as directory:
+            batch_dir = Path(directory) / "mail-daily"
+            (batch_dir / "audio").mkdir(parents=True)
+            (batch_dir / "briefing.json").write_text("{}", encoding="utf-8")
+            with patch("tools.mail_briefing_job.subprocess.run") as run:
+                url = deploy_batch(batch_dir, config)
+
+        commands = [call.args[0] for call in run.call_args_list]
+        flattened = [" ".join(command) for command in commands]
+        self.assertEqual(url, f"{config.public_url}/prototype/briefing/index.html")
+        self.assertTrue(any("prototype/history/index.html" in command for command in flattened))
+        self.assertTrue(any("prototype/relecture/" in command for command in flattened))
+        self.assertTrue(any("prototype/generated/" in command for command in flattened))
+        self.assertTrue(any("local-data/history/" in command for command in flattened))
+        self.assertTrue(any(command.endswith("prototype/briefing/briefing.json") for command in flattened))
+        self.assertTrue(any(command.endswith("prototype/briefing/audio/") for command in flattened))
+
     def test_compact_paragraphs_marks_truncation_without_splitting_paragraph(self):
         paragraphs, truncated = compact_paragraphs(sample_message(), 60)
         self.assertTrue(truncated)
@@ -272,7 +291,7 @@ class MailBriefingJobTest(unittest.TestCase):
         self.assertTrue(any(str(ROOT / "prototype" / "index.html") in command for command in commands))
         self.assertTrue(any(str(ROOT / "prototype" / "briefing" / "index.html") in command for command in commands))
         self.assertTrue(any(str(ROOT / "prototype" / "theme.css") in command for command in commands))
-        self.assertTrue(url.endswith("/prototype/briefing/?batch=latest"))
+        self.assertTrue(url.endswith("/prototype/briefing/index.html"))
 
 
 if __name__ == "__main__":

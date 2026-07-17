@@ -446,20 +446,56 @@ def build_batch(drop: dict, generated: list[tuple[dict, list[GeneratedItem]]], c
 def deploy_batch(batch_dir: Path, config: DeployConfig) -> str:
     root = config.remote_root
     host = config.ssh_host
-    subprocess.run(["ssh", host, "mkdir", "-p", f"{root}/prototype/briefing", f"{root}/local-data/briefing"], check=True)
+    subprocess.run(
+        [
+            "ssh",
+            host,
+            "mkdir",
+            "-p",
+            f"{root}/prototype/briefing",
+            f"{root}/prototype/history",
+            f"{root}/prototype/relecture",
+            f"{root}/prototype/generated",
+            f"{root}/local-data/briefing",
+            f"{root}/local-data/history",
+        ],
+        check=True,
+    )
     page_assets = (
         (ROOT / "prototype" / "index.html", f"{root}/prototype/index.html"),
         (ROOT / "prototype" / "briefing" / "index.html", f"{root}/prototype/briefing/index.html"),
+        (ROOT / "prototype" / "history" / "index.html", f"{root}/prototype/history/index.html"),
         (ROOT / "prototype" / "theme.css", f"{root}/prototype/theme.css"),
     )
     for local_path, remote_path in page_assets:
         subprocess.run(["rsync", "-az", str(local_path), f"{host}:{remote_path}"], check=True)
+    for directory in ("relecture", "generated"):
+        subprocess.run(
+            ["rsync", "-az", "--delete", f"{ROOT}/prototype/{directory}/", f"{host}:{root}/prototype/{directory}/"],
+            check=True,
+        )
+    history_dir = ROOT / "local-data" / "history"
+    if history_dir.is_dir():
+        subprocess.run(
+            ["rsync", "-az", "--delete", f"{history_dir}/", f"{host}:{root}/local-data/history/"],
+            check=True,
+        )
     subprocess.run(["rsync", "-az", "--delete", f"{batch_dir}/", f"{host}:{root}/local-data/briefing/{batch_dir.name}/"], check=True)
+    subprocess.run(
+        ["rsync", "-az", str(batch_dir / "briefing.json"), f"{host}:{root}/prototype/briefing/briefing.json"],
+        check=True,
+    )
+    audio_dir = batch_dir / "audio"
+    if audio_dir.is_dir():
+        subprocess.run(
+            ["rsync", "-az", "--delete", f"{audio_dir}/", f"{host}:{root}/prototype/briefing/audio/"],
+            check=True,
+        )
     subprocess.run(
         ["ssh", host, "ln", "-sfn", batch_dir.name, f"{root}/local-data/briefing/latest"],
         check=True,
     )
-    return f"{config.public_url.rstrip('/')}/prototype/briefing/?batch=latest"
+    return f"{config.public_url.rstrip('/')}/prototype/briefing/index.html"
 
 
 def run_job(config_path: Path, env_path: Path, skip_tts: bool = False) -> Path | None:
