@@ -259,7 +259,7 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
 @media(max-width:1020px){
   header{position:static}
   .wrap{grid-template-columns:1fr}
-  .left{position:static}
+  .left{position:static;animation:none!important;transform:none!important}
   .player-slot.is-reserving{min-height:var(--player-slot-height)}
   .module-head{position:sticky;top:var(--module-sticky-top,0);z-index:40;margin-inline:-2px;padding:12px 2px 10px;background:var(--paper);border-bottom:1px solid var(--hairline)}
   .map-list{max-height:none}
@@ -577,6 +577,7 @@ let curMap = null;
 let subtitles = [], subtitlesOn = true;
 let currentVideoId = null;
 let playbackActive = false;
+let lastPlaybackTime = null, stalledPlaybackPolls = 0;
 const isFileMode = location.protocol === "file:";
 const localCourseUrl = t => `http://127.0.0.1:8737/prototype/index.html?t=${Math.max(0,Math.floor(t||0))}`;
 
@@ -661,7 +662,19 @@ function syncPlayback(){
   $("now-t").textContent = fmt(t);
   renderSubtitle(t);
   const st = player.getPlayerState ? player.getPlayerState() : -1;
-  playbackActive=st===1||st===3;
+  const stateActive=st===1||st===3;
+  const stateStopped=st===0||st===2||st===5;
+  const timeAdvanced=lastPlaybackTime!==null&&t>lastPlaybackTime+.05;
+  if(stateActive||(!stateStopped&&timeAdvanced)){
+    playbackActive=true;
+    stalledPlaybackPolls=0;
+  }else if(stateStopped){
+    playbackActive=false;
+    stalledPlaybackPolls=0;
+  }else if(playbackActive&&++stalledPlaybackPolls>=2){
+    playbackActive=false;
+  }
+  lastPlaybackTime=t;
   updateFloatingPlayer();
   if(!playbackActive) return;
   const i = segAt(t);
@@ -690,6 +703,10 @@ $("subtitle-toggle").addEventListener("click",()=>{
   if(!subtitlesOn) $("subtitle-box").textContent="";
 });
 function initPlayer(vid){
+  playbackActive=false;
+  lastPlaybackTime=null;
+  stalledPlaybackPolls=0;
+  updateFloatingPlayer();
   if(player){ player.cueVideoById(vid); return; }
   if(isFileMode){
     $("file-mode-note").classList.add("show");
@@ -708,7 +725,13 @@ function initPlayer(vid){
           setInterval(syncPlayback, 1000);
         },
         onStateChange: event => {
-          playbackActive=event.data===YT.PlayerState.PLAYING||event.data===YT.PlayerState.BUFFERING;
+          if(event.data===YT.PlayerState.PLAYING||event.data===YT.PlayerState.BUFFERING){
+            playbackActive=true;
+            stalledPlaybackPolls=0;
+          }else if(event.data===YT.PlayerState.PAUSED||event.data===YT.PlayerState.ENDED||event.data===YT.PlayerState.CUED){
+            playbackActive=false;
+            stalledPlaybackPolls=0;
+          }
           updateFloatingPlayer();
         }
       }
