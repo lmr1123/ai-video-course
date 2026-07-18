@@ -116,6 +116,7 @@
 
     function esc(value){return String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
     function safeHref(value){try{const url=new URL(value,location.origin);return ["http:","https:"].includes(url.protocol)?url.href:"#"}catch{return "#"}}
+    function isMobileDevice(){return navigator.userAgentData?.mobile===true||/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Macintosh/i.test(navigator.userAgent))}
     function formatDate(value){return value?String(value).slice(0,10):"日期未提供"}
     function currentItem(){return batch.items[itemIndex]}
     function currentSegment(){return currentItem().spoken_segments[segmentIndex]}
@@ -126,7 +127,7 @@
     }
     function sourceById(id){return batch.sources.find(source=>source.source_id===id)}
     function sourceLabel(item){const source=sourceById(item.source_ids[0]);return source?.author||source?.title||"未知来源"}
-    function originalLabel(source){return source?.kind==="email"?"打开原邮件":"打开原文"}
+    function originalLabel(source){return source?.kind==="email"?"用 Gmail 打开原邮件":"打开原文"}
     function totalSegments(){return batch.items.reduce((sum,item)=>sum+item.spoken_segments.length,0)}
     function totalUnits(){return(batch.intro_text?1:0)+batch.items.reduce((sum,item)=>sum+item.spoken_segments.length+(item.transition_text?1:0),0)}
     function completedUnits(){
@@ -151,12 +152,13 @@
       const refSource=sourceById(ref.source_id),href=safeHref(ref.url),label=`${ref.label} · ${formatDate(refSource?.published_at)}`;
       const origin=refSource?.author||refSource?.title;
       const originLine=origin?`<div class="source-origin">来信来源：${esc(origin)}</div>`:"";
+      const gmailAttr=refSource?.kind==="email"?' data-gmail-link="true"':"";
       if(ref.excerpt||ref.excerpt_zh){
         const readable=ref.excerpt_zh||ref.excerpt;
         const original=ref.excerpt_zh&&ref.excerpt?`<details class="source-original"><summary>英文原文</summary><p>${esc(ref.excerpt)}</p></details>`:"";
-        return`<details class="source-evidence"><summary>来源内容 · ${esc(label)}</summary><div class="source-excerpt">${originLine}<p>${esc(readable)}</p>${original}<a href="${esc(href)}" target="_blank" rel="noopener">${esc(originalLabel(refSource))} ↗</a></div></details>`;
+        return`<details class="source-evidence"><summary>来源内容 · ${esc(label)}</summary><div class="source-excerpt">${originLine}<p>${esc(readable)}</p>${original}<a href="${esc(href)}" target="_blank" rel="noopener"${gmailAttr}>${esc(originalLabel(refSource))} ↗</a></div></details>`;
       }
-      return`<details class="source-evidence"><summary>来源内容 · ${esc(label)}</summary><div class="source-excerpt">${originLine}<p>当前内容包没有保存这段来源摘录。</p><a href="${esc(href)}" target="_blank" rel="noopener">${esc(originalLabel(refSource))} ↗</a></div></details>`;
+      return`<details class="source-evidence"><summary>来源内容 · ${esc(label)}</summary><div class="source-excerpt">${originLine}<p>当前内容包没有保存这段来源摘录。</p><a href="${esc(href)}" target="_blank" rel="noopener"${gmailAttr}>${esc(originalLabel(refSource))} ↗</a></div></details>`;
     }
     function renderItem(){
       const item=currentItem(),source=sourceById(item.source_ids[0]);
@@ -199,6 +201,7 @@
     $("queue").addEventListener("click",event=>{const button=event.target.closest("[data-index]");if(!button)return;selectItem(Number(button.dataset.index));if(typeof $("queue-panel").hidePopover==="function")$("queue-panel").hidePopover()});
     $("timeline").addEventListener("click",event=>{const button=event.target.closest("[data-timeline-index]");if(button)selectItem(Number(button.dataset.timelineIndex))});
     $("queue-panel").addEventListener("toggle",event=>{const open=event.newState==="open";$("queue-toggle").setAttribute("aria-expanded",String(open));if(open)requestAnimationFrame(()=>$("queue").querySelector(".current")?.scrollIntoView({block:"nearest"}))});
+    $("script").addEventListener("click",event=>{const link=event.target.closest("a[data-gmail-link]");if(!link||!isMobileDevice())return;const url=new URL(link.href);if(url.protocol!=="https:"||url.hostname!=="mail.google.com")return;event.preventDefault();location.assign(url.href)});
     $("script").addEventListener("click",event=>{const node=event.target.closest("[data-segment]");if(!node||event.target.closest("a,.source-evidence"))return;const autoplay=playing;stopPlayback();phase="segment";segmentIndex=Number(node.dataset.segment);renderItem();if(autoplay)startPlayback()});
     $("script").addEventListener("keydown",event=>{if(!["Enter"," "].includes(event.key)||event.target.closest("a,.source-evidence"))return;event.preventDefault();event.target.click()});
     $("play").addEventListener("click",()=>playing?stopPlayback():startPlayback());$("previous").addEventListener("click",()=>selectItem(itemIndex-1));$("next").addEventListener("click",()=>selectItem(itemIndex+1));
