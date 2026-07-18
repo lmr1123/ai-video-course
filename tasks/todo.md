@@ -9,9 +9,16 @@
 成功标准：只提交已确认的页面与项目记录；推送 `main` 触发现有 Pages 工作流；工作流成功；线上首页和资讯速听页返回本次版本。
 
 - [x] 核对现有线上入口、发布工作流和待发布文件
-- [ ] 提交并推送已确认改动
-- [ ] 等待 GitHub Pages 发布成功
-- [ ] 验证线上页面版本并记录结果
+- [x] 提交并推送已确认改动
+- [x] 等待 GitHub Pages 发布成功
+- [x] 验证线上页面版本并记录结果
+
+### Review
+
+- 发布提交 `a4b5a84` 已推送到 `origin/main`；GitHub Pages 工作流 run `29629360789` 完成且结论为 success。
+- 公网首页与资讯速听页均返回 HTTP 200；首页已命中手机页头取消吸附、播放器状态轮询、模块标题吸附和浅色时间戳代码，资讯速听操作区已位于正文末尾。
+- 未发布本地备选稿 `prototype/learning-home.html` 和 `design-qa.md`。
+- 线上地址：`https://lmr1123.github.io/ai-video-course/`；资讯速听：`https://lmr1123.github.io/ai-video-course/briefing/`。
 
 ## 2026-07-18 · 手机课程阅读吸附修正
 
