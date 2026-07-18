@@ -2,6 +2,24 @@
 
 > 本文件保留历史执行记录；当前阶段、唯一 owner 和下一门槛统一见 `tasks/current.md`。
 
+## 2026-07-18 · 修正发布目标到腾讯云私人站点
+
+范围：把本次已确认的课程页与资讯速听页静态 UI 同步到 `ker-cloud:/home/ubuntu/ai-briefing-site/prototype/`；保留服务器现有 latest 批次、音频、登录态与运行配置。
+
+成功标准：只同步 `prototype/index.html`、`prototype/briefing/index.html` 和共享主题；服务器文件命中本次修正；用户入口 `https://49.232.195.165/prototype/briefing/?batch=latest` 仍可访问且继续加载现有 latest 数据。
+
+- [x] 识别 GitHub Pages 与腾讯云两个不同线上环境
+- [x] 核对腾讯云目标目录与当前运行数据边界
+- [x] 同步两项有差异的 HTML，不覆盖批次和音频
+- [x] 验证用户实际线上入口及课程页
+
+### Review
+
+- 腾讯云目标确认为 `ker-cloud:/home/ubuntu/ai-briefing-site`；只同步 `prototype/index.html` 和 `prototype/briefing/index.html`，共享主题校验值一致所以未重复覆盖。
+- 服务器两页 SHA-256 与本地完全一致，并命中手机页头取消吸附、播放器状态轮询、模块标题吸附和资讯操作后置代码。
+- `local-data/briefing/latest` 同步前后均指向 `mail-daily-2026-07-16`，对应 `briefing.json` 非空；没有运行整批部署函数，也没有修改音频、历史、登录态或 Caddy 配置。
+- 用户入口与课程页均由 Caddy/BriefingSession 正常返回 HTTP/2 302 到登录页，且保留原始 `next` 地址；登录后访问路径不变。
+
 ## 2026-07-18 · 手机课程修正发布到 GitHub Pages
 
 范围：把已确认的资讯速听操作后置、课程页手机播放器/模块标题吸附和浅色时间戳发布到现有 GitHub Pages；不发布已放弃的学习首页备选稿和本地设计文件。

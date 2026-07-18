@@ -14,6 +14,7 @@
 
 | 任务 | Owner | 分支/工作区 | 文件范围 | 状态 |
 |---|---|---|---|---|
+| 修正发布目标到腾讯云私人站点 | 当前主会话 | main / 当前共享工作区 | 腾讯云 `prototype/` 静态页面，不含私人运行时数据 | 已完成 |
 | 手机课程修正发布到 GitHub Pages | 当前主会话 | main / 当前共享工作区 | 已确认页面、项目记录、Pages 工作流 | 已完成 |
 | 手机课程阅读吸附修正 | 当前主会话 | main / 当前共享工作区 | `prototype/index.html`、相关记录 | 已完成 |
 | 速听操作后置与课程阅读跟随视频 | 当前主会话 | main / 当前共享工作区 | `prototype/briefing/index.html`、`prototype/index.html`、相关记录 | 已完成 |
