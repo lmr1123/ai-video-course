@@ -109,6 +109,7 @@ header{
 }
 .now-playing .t{font-family:var(--mono);color:var(--vermilion);font-weight:500}
 .subtitle-toggle{border:0;background:none;color:var(--ink-soft);font:inherit;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.player-external{display:none}
 
 /* knowledge map nav */
 .map-nav{margin-top:26px}
@@ -250,6 +251,7 @@ section{margin-bottom:52px}
 .recall-reference ul{padding-left:20px;font-size:13.5px;line-height:1.8}
 
 footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;font-size:11.5px;color:var(--ink-faint)}
+.back-to-top{display:none}
 
 /* entering animation */
 .wrap.active .left{animation:rise .5s ease both}
@@ -265,6 +267,10 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
   .map-list{max-height:none}
   .deck-grid{grid-template-columns:1fr}
   .subtitle-box{min-height:38px;padding:7px 10px;font-size:12px}
+  .player-external{display:inline-block;margin:8px 2px 0;color:var(--ink-faint);font-size:11px;text-underline-offset:3px}
+  .back-to-top{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:55;display:flex;align-items:center;gap:5px;border:1px solid var(--hairline);border-radius:999px;padding:7px 11px;background:rgba(248,244,235,.82);box-shadow:0 5px 16px rgba(33,29,23,.07);color:var(--ink-faint);font:500 11px var(--sans);opacity:0;pointer-events:none;transform:translateY(8px);transition:opacity .16s ease,transform .16s ease;backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+  .back-to-top.show{opacity:.82;pointer-events:auto;transform:none}
+  .back-to-top:focus-visible{outline:2px solid var(--ink-soft);outline-offset:2px}
   .qa{padding:15px 14px}.recall{padding:20px 16px}
 }
 </style>
@@ -314,6 +320,7 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
       <span>英文使用 YouTube 字幕 · <button class="subtitle-toggle" id="subtitle-toggle" type="button">关闭中文字幕</button></span>
       <span class="t" id="now-t">00:00:00</span>
     </div>
+    <a class="player-external" id="youtube-app-link" href="https://youtu.be/P3KDebPTUrw" target="_blank" rel="noopener">在 YouTube 中打开 · 画中画由手机控制</a>
     <nav class="map-nav">
       <h3>知识地图 · 跳转导航</h3>
       <ul class="map-list" id="map-list"></ul>
@@ -546,6 +553,8 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
   </div>
 </div>
 
+<button class="back-to-top" id="back-to-top" type="button" aria-label="回到页面顶部">↑ 顶部</button>
+
 <script>
 /* ── 课程数据（原型：单条样例）────────────── */
 const COURSES = {
@@ -614,6 +623,7 @@ function loadCourse(vid){
   const data = COURSES[vid];
   if(!data){ show("miss"); return; }
   currentVideoId = vid;
+  $("youtube-app-link").href=`https://youtu.be/${encodeURIComponent(vid)}`;
   curMap = data.map;
   renderMap(data.map);
   loadSubtitles(vid);
@@ -717,7 +727,7 @@ function initPlayer(vid){
   const boot = () => {
     player = new YT.Player("yt-player", {
       videoId: vid,
-      playerVars: {rel:0, modestbranding:1, cc_load_policy:1, cc_lang_pref:"en", origin:location.origin},
+      playerVars: {rel:0, modestbranding:1, cc_load_policy:1, cc_lang_pref:"en", playsinline:1, origin:location.origin},
       events: {
         onReady: () => {
           playerReady = true;
@@ -768,8 +778,15 @@ document.addEventListener("click", e => {
   if(!el) return;
   seek(parseFloat(el.dataset.t));
 });
-window.addEventListener("scroll",updateFloatingPlayer,{passive:true});
+const backToTop=$("back-to-top");
+function updateScrollUi(){
+  updateFloatingPlayer();
+  backToTop.classList.toggle("show",window.scrollY>640);
+}
+window.addEventListener("scroll",updateScrollUi,{passive:true});
 window.addEventListener("resize",updateFloatingPlayer);
+backToTop.addEventListener("click",()=>window.scrollTo({top:0,behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}));
+updateScrollUi();
 
 /* ── 深链：?t=秒 直接打开样例课程并跳到原片对应位置（供重讲课溯源跳回） ── */
 {
