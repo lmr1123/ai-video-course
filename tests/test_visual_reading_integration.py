@@ -33,8 +33,8 @@ class VisualReadingIntegrationTests(unittest.TestCase):
         self.assertIn("learning_views?.visual_reading", viewer)
         self.assertIn("当前课程学习方式", viewer)
         self.assertIn('location.hostname.endsWith("github.io")', viewer)
-        self.assertIn('body class="page-generated"', viewer)
-        self.assertIn('href="../theme.css"', viewer)
+        self.assertIn('body class="page-course page-generated"', viewer)
+        self.assertIn('href="../theme.css?v=', viewer)
         self.assertIn('href="../history/index.html"', viewer)
         self.assertIn(
             f'/prototype/generated/viewer.html?id={VIDEO_ID}', visual_page
@@ -54,6 +54,14 @@ class VisualReadingIntegrationTests(unittest.TestCase):
         self.assertIn("用人话怎么理解", viewer)
         self.assertIn("对项目的价值＋最小实践", viewer)
         self.assertNotIn('class="cards"', viewer)
+        self.assertIn(".player-frame{border:1px solid var(--line-soft", viewer)
+        self.assertIn(".deck{border:0", viewer)
+        self.assertIn(".qa{margin-bottom:12px;padding:18px 20px;background:var(--card);border:0", viewer)
+        self.assertNotIn("box-shadow:8px 8px", viewer)
+
+        theme = (ROOT / "prototype/theme.css").read_text()
+        self.assertIn(".page-generated .section-heading::after{display:none}", theme)
+        self.assertIn(".page-generated .practice{border:0", theme)
 
     def test_plain_explanations_are_substantial_and_readable_by_default(self):
         course = json.loads(

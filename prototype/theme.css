@@ -151,16 +151,15 @@ body.page-generated{
 .page-relecture.render .canvas-frame{border:0;box-shadow:none}
 
 /* Generated course */
-.page-generated .top{border-bottom:1px solid var(--line-soft)}
-.page-generated .video{border:1px solid var(--line-soft)}
+.page-generated .site-header{border-bottom:1px solid var(--line-soft)}
+.page-generated .map-title::after{height:1px;background:var(--line-soft)}
 .page-generated .map li{border-bottom:0;border-radius:2px;margin-bottom:2px}
 .page-generated .badge{border-color:var(--line-soft)}
-.page-generated .facts{gap:8px;background:transparent;border:0}
-.page-generated .fact{border-radius:2px}
-.page-generated .ts{border:0;background:transparent;padding:0;text-decoration:underline;text-decoration-color:var(--line-soft);text-underline-offset:3px}
+.page-generated .section-heading::after{display:none}
+.page-generated .learning-view{border-color:var(--line-soft)}
+.page-generated .ts-chip{border-color:var(--line-soft)}
 .page-generated .module-head{border-bottom:0;padding-bottom:4px}
-.page-generated .card{border:0;border-radius:2px}
-.page-generated .evidence{border-top:0;padding:8px 0}
+.page-generated .practice{border:0;border-radius:2px;background:var(--paper-deep);padding:12px 14px}
 .page-generated .recall,.page-generated .error{border:0;border-radius:2px}
 .page-generated .recall textarea{border:1px solid var(--line-soft)}
 .page-generated .reference{border-top:0;background:var(--paper);padding:14px;margin-top:16px}
