@@ -81,6 +81,10 @@ header{
   font-weight:700;font-size:13px;color:var(--ink);text-decoration:none;cursor:pointer;background:var(--card);
 }
 .state .demo-link:hover{background:var(--ink);color:var(--paper)}
+.state .sample-list{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:22px}
+.state .sample-list .demo-link{margin-top:0}
+.state .sample-note{display:block;margin-top:2px;font-size:11px;color:var(--vermilion);font-weight:700}
+.state .private-learning-note[hidden]{display:none}
 
 /* ── layout ─────────────────────── */
 .wrap{max-width:1280px;margin:0 auto;padding:30px 28px 120px;display:none}
@@ -285,13 +289,13 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
       <span class="en">Video → Course</span>
     </div>
     <div class="linkbar">
-      <input id="url-input" type="text" placeholder="粘贴 YouTube 链接，例如 https://youtu.be/P3KDebPTUrw" spellcheck="false">
+      <input id="url-input" type="text" placeholder="粘贴 YouTube 链接，例如 https://youtu.be/eAXxdtNlK04" spellcheck="false">
       <button id="go-btn">生成课程</button>
     </div>
     <a class="hd-mode" href="briefing/index.html">资讯速听</a>
     <a class="hd-mode" href="history/index.html">历史记录</a>
     <a class="hd-mode" href="relecture/index.html">🎧 重讲课</a>
-    <span class="hd-note">原型 · 仅含 1 条已生成课程</span>
+    <span class="hd-note">原型 · 2 条已生成课程</span>
   </div>
 </header>
 
@@ -300,15 +304,21 @@ footer{border-top:1px solid var(--hairline);margin-top:60px;padding-top:16px;fon
   <div class="glyph">讲</div>
   <h2>把长视频重构成进阶课程</h2>
   <p>粘贴一条 YouTube 链接。课程包含导读决策卡、知识地图和深讲模块，<br>所有结论都能点击时间戳回到原视频核对。</p>
-  <a class="demo-link" id="demo-btn">▶ 打开样例课程 · Lenny's Podcast × OpenAI Codex</a>
+  <div class="sample-list" aria-label="已生成课程">
+    <a class="demo-link" id="visual-demo-btn">▶ Stop Burning Tokens<span class="sample-note private-learning-note">视频课堂 · 支持图文精讲</span></a>
+    <a class="demo-link" id="demo-btn">▶ Lenny's Podcast × OpenAI Codex<span class="sample-note">视频课堂 · 访谈内容不生成图文精讲</span></a>
+  </div>
 </div>
 
 <!-- 未命中态 -->
 <div class="state" id="state-miss" style="display:none">
   <div class="glyph">待</div>
   <h2>这条视频还没有生成课程</h2>
-  <p>原型阶段只预置了一条手工制作的样例课程。<br>试试 <code>https://youtu.be/P3KDebPTUrw</code></p>
-  <a class="demo-link" id="demo-btn2">▶ 打开样例课程</a>
+  <p>这条视频还没有课程数据。你可以返回已生成课程，或换一条链接。</p>
+  <div class="sample-list">
+    <a class="demo-link" id="visual-demo-btn2">▶ Stop Burning Tokens · 视频课堂</a>
+    <a class="demo-link" id="demo-btn2">▶ Lenny's Podcast · 访谈课程</a>
+  </div>
 </div>
 
 <!-- 课程视图 -->
@@ -645,9 +655,13 @@ async function go(){
 }
 $("go-btn").addEventListener("click", go);
 $("url-input").addEventListener("keydown", e => { if(e.key==="Enter") go(); });
+if(location.hostname.endsWith("github.io"))document.querySelectorAll(".private-learning-note").forEach(x=>x.hidden=true);
 const openDemo = () => { $("url-input").value = "https://youtu.be/P3KDebPTUrw"; go(); };
+const openVisualDemo = () => { $("url-input").value = "https://youtu.be/eAXxdtNlK04"; go(); };
 $("demo-btn").addEventListener("click", openDemo);
 $("demo-btn2").addEventListener("click", openDemo);
+$("visual-demo-btn").addEventListener("click", openVisualDemo);
+$("visual-demo-btn2").addEventListener("click", openVisualDemo);
 
 /* ── 知识地图渲染 ─────────────────────────── */
 function renderMap(map){

@@ -1,0 +1,216 @@
+{
+  "video_id": "eAXxdtNlK04",
+  "source_url": "https://youtu.be/eAXxdtNlK04",
+  "source_title": "Stop Burning Tokens: Why self-improvement needs domain expertise first",
+  "channel": "AI Engineer · Annabell Schäfer, Langfuse",
+  "duration_sec": 1059,
+  "course_title": "别再烧 Token：自动改进之前，先把什么算好说清楚",
+  "one_sentence": "自动改进循环能否有效，不取决于把 Agent 跑得多勤，而取决于是否有足量、稳定、贴近领域的高信号反馈。",
+  "audience": "正在设计 Agent、评估器或自动优化流程的开发者与产品团队",
+  "prerequisites": [
+    "了解提示词与 Agent 的基本概念",
+    "知道训练集、验证集和测试集的区别"
+  ],
+  "expected_gain": [
+    "识别目标函数是否足以驱动自动改进",
+    "用 fit、validation、test 防止过拟合",
+    "把领域专家判断改写成高信号反馈"
+  ],
+  "learning_views": {
+    "visual_reading": {
+      "label": "图文精讲",
+      "path": "/local-data/visual-reading/eAXxdtNlK04/index.html",
+      "reason": "目标函数结构、循环步骤、数据拆分和准确率变化由幻灯片直接承载。"
+    }
+  },
+  "claims": [
+    {
+      "text": "自动改进之前，先把领域中隐含的“好”变成可持续评估的目标函数。",
+      "start_sec": 99
+    },
+    {
+      "text": "提示词更新只有在 validation 集上也提升时才应被接受。",
+      "start_sec": 280
+    },
+    {
+      "text": "通用分数信号太弱，领域专家需要把判断拆成具体失败模式和可观察标准。",
+      "start_sec": 734
+    }
+  ],
+  "topics": [
+    {
+      "title": "为什么代码领域更容易形成改进循环",
+      "start_sec": 0,
+      "end_sec": 99,
+      "action": "快讲",
+      "importance": "中",
+      "difficulty": "低",
+      "core": "代码至少有能否编译这种稳定信号。",
+      "why": "建立目标函数的参照物。"
+    },
+    {
+      "title": "目标天然不完整",
+      "start_sec": 99,
+      "end_sec": 280,
+      "action": "深讲",
+      "importance": "高",
+      "difficulty": "中",
+      "core": "循环只能沿目标函数给出的方向优化。",
+      "why": "解释为什么循环越快也可能越浪费。"
+    },
+    {
+      "title": "最小自优化实验",
+      "start_sec": 280,
+      "end_sec": 734,
+      "action": "深讲",
+      "importance": "高",
+      "difficulty": "高",
+      "core": "用 fit 找错误、validation 接受更新、test 检查泛化。",
+      "why": "提供可复现的循环结构。"
+    },
+    {
+      "title": "把领域知识变成高信号反馈",
+      "start_sec": 734,
+      "end_sec": 1031,
+      "action": "深讲",
+      "importance": "高",
+      "difficulty": "中",
+      "core": "专家用例子、失败模式和具体判断定义什么算好。",
+      "why": "把实验迁移到真实业务。"
+    },
+    {
+      "title": "停止条件与交还给人",
+      "start_sec": 1031,
+      "end_sec": 1059,
+      "action": "快讲",
+      "importance": "高",
+      "difficulty": "低",
+      "core": "循环必须有停止条件和逃生出口。",
+      "why": "避免系统撞墙后继续消耗 Token。"
+    }
+  ],
+  "deep_modules": [
+    {
+      "title": "循环不是起点，目标函数才是",
+      "start_sec": 61,
+      "end_sec": 280,
+      "content_type": "核心观点与系统机制",
+      "learning_goal": "能判断一个目标函数是否足以驱动自动改进",
+      "summary_30s": "循环只会更快地追逐目标函数；目标不完整或信号不稳定时，更多迭代只会更快浪费 Token。",
+      "problem": "编码任务有能否编译这种稳定信号，但医疗、合规、客服等领域里的“回答得好不好”往往不完整且会随情境变化。",
+      "author_judgment": [
+        {
+          "attribution": "近义转述",
+          "text": "交给 Agent 的目标本身通常不完整；团队需要持续捕捉真正想要的结果并扩展目标函数。",
+          "start_sec": 99
+        },
+        {
+          "attribution": "归纳",
+          "text": "可靠评估器不是循环之后的验收工具，而是循环能够有效学习的前提。",
+          "start_sec": 159
+        }
+      ],
+      "plain_explanation": "循环像不断踩油门和修方向。如果导航终点画错了，车跑得越快，离真正目的地越远。",
+      "mechanism": "最小系统由执行任务的 Agent、判断结果的目标函数和根据错误提出更新的 Optimizer 组成。目标函数决定 Optimizer 能看到什么错误，也决定最终优化成什么。",
+      "cases": [
+        {
+          "attribution": "原片",
+          "text": "幻灯片用偏离路线的山路说明最初目标与真实最优方向可能不同。",
+          "start_sec": 121
+        },
+        {
+          "attribution": "原片",
+          "text": "单标签分类实验把 Agent、ground truth 和 Optimizer 组成最小循环。",
+          "start_sec": 203
+        }
+      ],
+      "value": "设计 Agent 时先确认错误信号是否稳定、具体、可修复，再决定循环次数和优化器。",
+      "practice": "选一个正在使用的 Agent，写下它当前的目标函数，以及这个目标遗漏了哪一种真实质量要求。",
+      "technical_deep_dive": "目标函数既是测量接口也是搜索方向；低辨识度评价会让 Optimizer 无法区分可行动的更新假设。"
+    },
+    {
+      "title": "用可验证任务观察循环到底学会了什么",
+      "start_sec": 280,
+      "end_sec": 734,
+      "content_type": "实验结构与泛化判断",
+      "learning_goal": "能用三组数据和接受门槛组织自动改进实验",
+      "summary_30s": "fit 集暴露错误，validation 集决定是否接受更新，test 集只在结束后检查泛化；没有这三层，准确率上升也可能只是迎合训练数据。",
+      "problem": "即使准确率上升，也需要区分真正泛化、迎合训练数据和碰巧撞对。",
+      "author_judgment": [
+        {
+          "attribution": "近义转述",
+          "text": "实验使用 200 条 fit、100 条 validation 和 300 条 test；更新只有在未见数据上也提升时才接受。",
+          "start_sec": 280
+        },
+        {
+          "attribution": "归纳",
+          "text": "第一次改进约提升 10 个百分点，几轮后总提升约 15 个百分点并进入平台期。",
+          "start_sec": 507
+        }
+      ],
+      "plain_explanation": "fit 像练习册，validation 像阶段测验，test 像封存的期末考试。练习做得好不等于真正学会。",
+      "mechanism": "建立基线，在 fit 集聚类错误，针对最大错误簇提出一次更新；只有 validation 提升才接受，达到停止条件后再用 test 检查泛化。",
+      "cases": [
+        {
+          "attribution": "原片",
+          "text": "步骤图同时给出了错误分析、提示词更新、验证门槛和停止规则。",
+          "start_sec": 347
+        },
+        {
+          "attribution": "边界",
+          "text": "论文作者选择主分类时仍有主观空间，因此 ground truth 也不是绝对真理。",
+          "start_sec": 473
+        }
+      ],
+      "value": "防止 Agent 因为在训练样本上看起来更好，就不断扩大一个不能泛化的修改。",
+      "practice": "为一个小任务各准备少量 fit、validation、test 样本，并写下更新被接受和循环停止的条件。",
+      "technical_deep_dive": "验证门槛把提示词优化从单一训练分数搜索，转换为受泛化约束的候选更新选择。"
+    },
+    {
+      "title": "把领域专家的判断变成高信号反馈",
+      "start_sec": 734,
+      "end_sec": 1031,
+      "content_type": "评估器设计与落地方法",
+      "learning_goal": "能把模糊质量要求改写成可观察判断",
+      "summary_30s": "correctness 或 helpfulness 的宽泛分数很难告诉 Agent 下一步改什么；领域专家需要把隐含标准拆成例子、失败模式和具体的是非判断。",
+      "problem": "大多数真实应用没有单一正确标签，而通用连续分数又容易随上下文和评审模型波动。",
+      "author_judgment": [
+        {
+          "attribution": "近义转述",
+          "text": "如果评分刻度没有在具体业务中定义清楚，它对自动改进就是低信号。",
+          "start_sec": 734
+        },
+        {
+          "attribution": "近义转述",
+          "text": "与专家一起看样本并追问判断理由，才能把他们默认认为显然的知识编码成评估器。",
+          "start_sec": 914
+        }
+      ],
+      "plain_explanation": "“帮助程度 4 分”不知道该修什么；“内部信息能否在检索上下文中找到”则直接指向一种可修复失败。",
+      "mechanism": "专家提供正反例、解释隐含决策并定义失败模式；生产数据扩大覆盖；validation、停止条件和交还给人的出口防止循环撞墙。",
+      "cases": [
+        {
+          "attribution": "原片",
+          "text": "幻灯片对比宽泛连续分数与贴近业务规则的是非判断。",
+          "start_sec": 901
+        },
+        {
+          "attribution": "原片",
+          "text": "落地步骤包括与专家共建标准、人工审查生产数据和设计泛化机制。",
+          "start_sec": 1043
+        }
+      ],
+      "value": "领域专家不是循环结束后的审核员，而是目标函数的共同设计者。",
+      "practice": "把“回答正确”或“语气自然”改写成三个可观察的是非判断，并分别给出一个正例和反例。",
+      "technical_deep_dive": "高信号评估器通过降低评价噪声、提高失败模式可分性，让 Optimizer 更容易提出有方向性的更新。"
+    }
+  ],
+  "recall_prompt": "为什么一个能够自动修改提示词的循环，仍然可能只是更快地浪费 Token？",
+  "recall_points": [
+    "目标函数可能不完整或信号不稳定",
+    "模糊评分无法指出可修复的失败模式",
+    "修改必须在未见数据上验证",
+    "领域专家需要把隐含标准变成例子和判断",
+    "系统需要停止条件和交还给人的出口"
+  ]
+}
