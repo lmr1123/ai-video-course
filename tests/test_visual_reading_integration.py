@@ -33,6 +33,9 @@ class VisualReadingIntegrationTests(unittest.TestCase):
         self.assertIn("learning_views?.visual_reading", viewer)
         self.assertIn("当前课程学习方式", viewer)
         self.assertIn('location.hostname.endsWith("github.io")', viewer)
+        self.assertIn('body class="page-generated"', viewer)
+        self.assertIn('href="../theme.css"', viewer)
+        self.assertIn('href="../history/index.html"', viewer)
         self.assertIn(
             f'/prototype/generated/viewer.html?id={VIDEO_ID}', visual_page
         )
@@ -43,6 +46,13 @@ class VisualReadingIntegrationTests(unittest.TestCase):
             (ROOT / "prototype/generated/P3KDebPTUrw/course.json").read_text()
         )
         self.assertNotIn("learning_views", course)
+
+    def test_history_falls_back_to_generated_manifest(self):
+        history = (ROOT / "prototype/history/index.html").read_text()
+        self.assertIn("Promise.allSettled", history)
+        self.assertIn('new URL("generated/manifest.json",prototypeRoot)', history)
+        self.assertIn('value.slice("prototype/".length)', history)
+        self.assertIn("isPublicGithub", history)
 
 
 if __name__ == "__main__":

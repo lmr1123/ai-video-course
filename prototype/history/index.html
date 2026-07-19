@@ -35,9 +35,18 @@
     const $=id=>document.getElementById(id);
     const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
     const typeLabel=type=>type==="course"?"视频课堂":"资讯速听";
-    const date=value=>value?String(value).slice(0,10):"";
-    function href(record){return `../../${record.web_url}`}
-    function markdownHref(record){return String(record.markdown_path||"").startsWith("local-data/")?`../../${record.markdown_path}`:""}
+    const date=value=>value?String(value).slice(0,10):"已生成";
+    const prototypeRoot=new URL("../",location.href);
+    const isPublicGithub=location.hostname.endsWith("github.io");
+    function href(record){
+      const value=String(record.web_url||"");
+      const relative=value.startsWith("prototype/")?value.slice("prototype/".length):value;
+      return new URL(relative,prototypeRoot).href;
+    }
+    function markdownHref(record){
+      const value=String(record.markdown_path||"");
+      return !isPublicGithub&&value.startsWith("local-data/")?new URL(`../${value}`,prototypeRoot).href:"";
+    }
     function render(index){
       const records=Array.isArray(index.records)?index.records:[];
       if(!records.length){
@@ -45,12 +54,27 @@
         $("list").innerHTML=`<div class="empty">运行生成命令后会出现记录，例如 <code>python3 tools/course_pipeline.py --fixture tests/fixtures/course.json</code> 或 <code>python3 tools/briefing_pipeline.py --fixture tests/fixtures/briefing.json</code>。</div>`;
         return;
       }
-      $("status").textContent=`共 ${records.length} 条 · 更新于 ${date(index.updated_at)}`;
-      $("list").innerHTML=records.map(record=>{const md=markdownHref(record);return`<article class="record"><span><b class="type">${esc(typeLabel(record.type))}</b><span class="date">${esc(date(record.created_at))}</span></span><span><h2><a href="${esc(href(record))}">${esc(record.title)}</a></h2><p>${esc(record.summary)}</p><div class="meta">${esc(record.source_title||"")}${md?` · <a href="${esc(md)}">查看 Markdown</a>`:` · Markdown: ${esc(record.markdown_path||"")}`}</div></span></article>`}).join("");
+      $("status").textContent=index.updated_at?`共 ${records.length} 条 · 更新于 ${date(index.updated_at)}`:`共 ${records.length} 条已生成内容`;
+      $("list").innerHTML=records.map(record=>{const md=markdownHref(record),markdown=String(record.markdown_path||"");return`<article class="record"><span><b class="type">${esc(typeLabel(record.type))}</b><span class="date">${esc(date(record.created_at))}</span></span><span><h2><a href="${esc(href(record))}">${esc(record.title)}</a></h2><p>${esc(record.summary)}</p><div class="meta">${esc(record.source_title||"")}${md?` · <a href="${esc(md)}">查看 Markdown</a>`:markdown?` · Markdown: ${esc(markdown)}`:""}</div></span></article>`}).join("");
     }
-    fetch("../../local-data/history/index.json").then(response=>{if(!response.ok)throw Error(`HTTP ${response.status}`);return response.json()}).then(render).catch(error=>{
-      $("status").textContent="历史索引还不可用。";
-      $("list").innerHTML=`<div class="empty">请先运行一次生成管线。历史索引会写入 <code>local-data/history/index.json</code>，Markdown 会保存在 <code>local-data/history/notes/</code>。<br><br>错误：${esc(error.message)}</div>`;
+    const loadJson=async url=>{const response=await fetch(url,{cache:"no-store"});if(!response.ok)throw Error(`HTTP ${response.status}`);return response.json()};
+    async function start(){
+      const historyPromise=isPublicGithub?Promise.reject(Error("private history unavailable")):loadJson(new URL("../local-data/history/index.json",prototypeRoot));
+      const [historyResult,manifestResult]=await Promise.allSettled([historyPromise,loadJson(new URL("generated/manifest.json",prototypeRoot))]);
+      const history=historyResult.status==="fulfilled"?historyResult.value:{records:[]};
+      const records=Array.isArray(history.records)?[...history.records]:[];
+      if(manifestResult.status==="fulfilled"){
+        for(const course of manifestResult.value.courses||[]){
+          if(records.some(record=>record.id===`course-${course.video_id}`))continue;
+          records.push({id:`course-${course.video_id}`,type:"course",title:course.title,created_at:"",source_title:"已生成视频课程",web_url:`prototype/generated/viewer.html?id=${encodeURIComponent(course.video_id)}`,summary:"已生成的视频课堂，可从知识地图进入重点片段并回到原片核对。",markdown_path:""});
+        }
+      }
+      if(!records.length)throw Error("没有可用的历史记录或生成课程");
+      render({records,updated_at:history.updated_at||""});
+    }
+    start().catch(error=>{
+      $("status").textContent="历史记录暂时无法读取。";
+      $("list").innerHTML=`<div class="empty">请检查生成课程清单或本地历史索引是否可用。<br><br>错误：${esc(error.message)}</div>`;
     });
   </script>
 </body>
