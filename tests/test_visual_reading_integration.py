@@ -41,6 +41,30 @@ class VisualReadingIntegrationTests(unittest.TestCase):
         )
         self.assertIn(f"https://youtu.be/{VIDEO_ID}", entry)
 
+    def test_generated_course_reuses_the_first_course_learning_structure(self):
+        viewer = (ROOT / "prototype/generated/viewer.html").read_text()
+
+        self.assertIn("课程导读 · 决策卡", viewer)
+        self.assertIn('class="deck"', viewer)
+        self.assertIn('class="map-detail"', viewer)
+        self.assertIn('data-d="d30"', viewer)
+        self.assertIn('data-d="dn" class="on"', viewer)
+        self.assertIn('data-d="dd"', viewer)
+        self.assertIn("这部分解决什么问题", viewer)
+        self.assertIn("用人话怎么理解", viewer)
+        self.assertIn("对项目的价值＋最小实践", viewer)
+        self.assertNotIn('class="cards"', viewer)
+
+    def test_plain_explanations_are_substantial_and_readable_by_default(self):
+        course = json.loads(
+            (ROOT / f"prototype/generated/{VIDEO_ID}/course.json").read_text()
+        )
+
+        for module in course["deep_modules"]:
+            explanation = module["plain_explanation"]
+            self.assertGreaterEqual(len(explanation), 120)
+            self.assertIn("\n\n", explanation)
+
     def test_interview_course_does_not_declare_visual_reading(self):
         course = json.loads(
             (ROOT / "prototype/generated/P3KDebPTUrw/course.json").read_text()
