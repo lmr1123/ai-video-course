@@ -2,6 +2,24 @@
 
 > 本文件保留历史执行记录；当前阶段、唯一 owner 和下一门槛统一见 `tasks/current.md`。
 
+## 2026-07-20 · 视频课程生成切换 GLM-5.2
+
+范围：仅切换视频课程结构化生成的模型客户端与默认配置；保留本地 CLI、字幕提取、课程 schema、缓存、用量账本、历史归档和静态发布流程，不把模型密钥放入网页。
+
+成功标准：课程管线默认调用智谱 `glm-5.2`，读取 `ZHIPU_API_KEY/ZHIPU_BASE_URL`，使用 Chat Completions 输出并通过现有 `Course` schema；不再默认依赖 `OPENAI_API_KEY/gpt-5.4`；缓存和用量统计回归通过，并完成一次最小真实鉴权/结构化生成验证。
+
+- [x] 审计现有 OpenAI Responses 调用与 GLM 速听实现
+- [x] 切换课程客户端、默认模型和结构化解析
+- [x] 更新测试、README 与决策记录
+- [x] 完成全量测试和真实 GLM 验收
+- [x] 记录 Review
+
+### Review
+
+- 课程 CLI 已从 OpenAI Responses API / `gpt-5.4` 切换为智谱 Chat Completions / `glm-5.2`，默认读取本机 `.env` 中的 `ZHIPU_API_KEY` 与 `ZHIPU_BASE_URL`；网页仍只打开已生成课程，不持有模型密钥。
+- GLM 返回 JSON 后继续经过完整 `Course` schema、时间戳和深讲映射校验；无效输出会携带校验错误重试一次，缓存指纹升级为 `course-v2-glm-5.2`，旧供应商缓存不会误命中。
+- 73 项全量测试通过。使用 `eAXxdtNlK04` 在 `/tmp` 隔离目录完成真实端到端生成：7 个主题、3 个深讲模块一次校验成功，深讲起点全部对应知识地图；用量账本记录模型 `glm-5.2`，总计 9,677 Token。
+
 ## 2026-07-18 · 手机来源链接优先唤起 Gmail
 
 范围：资讯速听的邮件来源在手机点击时优先交给系统 Gmail App/App Link，失败回退现有 Gmail 网页定位；不引入未公开的 Gmail 私有 URI。

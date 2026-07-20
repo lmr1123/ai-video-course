@@ -102,11 +102,14 @@ python3 tools/install_mail_briefing_schedule.py            # 写入并加载 Lau
 
 ```bash
 pip install -r requirements.txt
-export OPENAI_API_KEY="你的密钥"
+cp .env.example .env
+# 在 .env 填写 ZHIPU_API_KEY；ZHIPU_BASE_URL 已提供默认值
 python3 tools/course_pipeline.py "https://youtu.be/VIDEO_ID"
 ```
 
-流程：`YouTube URL → yt-dlp 英文字幕与元数据 → OpenAI Responses API 结构化课程 → 时间戳/schema 校验 → prototype/generated/`。默认模型为 `gpt-5.4`，可用 `OPENAI_MODEL` 或 `--model` 覆盖。
+流程：`YouTube URL → yt-dlp 英文字幕与元数据 → 智谱 Chat Completions 结构化课程 → 时间戳/schema 校验 → prototype/generated/`。默认模型为 `glm-5.2`，可用 `COURSE_MODEL` 或 `--model` 覆盖；接口默认读取 `ZHIPU_BASE_URL=https://open.bigmodel.cn/api/coding/paas/v4`。课程 JSON 会继续经过本地 Pydantic schema 校验，模型返回不合格时最多修正重试一次。
+
+网页输入框只负责打开已经生成并写入 `manifest.json` 的课程，不会在浏览器内直接调用 GLM。新链接仍需先在本机执行上述命令，避免把 `ZHIPU_API_KEY` 暴露给前端。
 
 生成成功后，本地打开 `http://localhost:8737/prototype/generated/viewer.html?id=VIDEO_ID`。同一次生成也会进入 `local-data/history/`，可在历史页回看课程记录和本地 Markdown。提交 `prototype/generated/` 后，GitHub Pages 会自动发布；首页输入框也会通过 `manifest.json` 识别已生成课程。
 

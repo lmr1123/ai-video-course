@@ -2,7 +2,7 @@
 """从 YouTube 链接生成可部署的静态课程数据。
 
 真实生成：
-  OPENAI_API_KEY=... python3 tools/course_pipeline.py https://youtu.be/VIDEO_ID
+  ZHIPU_API_KEY=... python3 tools/course_pipeline.py https://youtu.be/VIDEO_ID
 
 离线验证：
   python3 tools/course_pipeline.py --fixture tests/fixtures/course.json --output-root /tmp/course-output
@@ -22,7 +22,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, ValidationError, model_validator
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -39,7 +39,11 @@ from tools.model_runtime import (
 DEFAULT_OUTPUT = ROOT / "prototype" / "generated"
 DEFAULT_CACHE = ROOT / "local-data" / "model-cache" / "course"
 DEFAULT_USAGE = ROOT / "local-data" / "usage" / "course"
-COURSE_PROMPT_VERSION = "course-v1"
+DEFAULT_ENV = ROOT / ".env"
+DEFAULT_MODEL = "glm-5.2"
+DEFAULT_BASE_URL = "https://open.bigmodel.cn/api/coding/paas/v4"
+MAX_OUTPUT_TOKENS = 16000
+COURSE_PROMPT_VERSION = "course-v2-glm-5.2"
 
 
 class Claim(BaseModel):
@@ -116,6 +120,25 @@ class Course(BaseModel):
                 if evidence.attribution != "外部" and evidence.start_sec is None:
                     raise ValueError(f"视频内证据缺少时间戳：{module.title}")
         return self
+
+
+def load_env(path: Path = DEFAULT_ENV) -> None:
+    if not path.exists():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+def model_client(api_key: str, base_url: str = DEFAULT_BASE_URL):
+    try:
+        from openai import OpenAI
+    except ImportError as exc:
+        raise RuntimeError("缺少 openai SDK，请运行：pip install -r requirements.txt") from exc
+    return OpenAI(api_key=api_key, base_url=base_url)
 
 
 def run(command: list[str], cwd: Path | None = None) -> str:
@@ -213,8 +236,16 @@ def generate_course_from_source(
 3. 区分原话、归纳、解释、外部补充；视频内内容必须带 start_sec；
 4. 深讲回答问题、作者判断、人话解释、机制、案例、价值、最小实践和技术深入；
 5. 输出可验证的闭卷复述问题与 3–5 个核心检查点；
-6. 不虚构作者、产品、数字或时间戳。"""
-    payload = json.dumps(context, ensure_ascii=False) + "\n\n带时间戳英文字幕：\n" + transcript_for_prompt(cues)
+6. 不虚构作者、产品、数字或时间戳；
+7. 只输出符合给定 JSON Schema 的合法 JSON，不要 Markdown 代码块或额外说明。"""
+    schema = json.dumps(Course.model_json_schema(), ensure_ascii=False)
+    payload = (
+        json.dumps(context, ensure_ascii=False)
+        + "\n\n带时间戳英文字幕：\n"
+        + transcript_for_prompt(cues)
+        + "\n\n必须遵守的 JSON Schema：\n"
+        + schema
+    )
     cache_key = stable_hash({
         "prompt_version": COURSE_PROMPT_VERSION,
         "model": model,
@@ -225,62 +256,67 @@ def generate_course_from_source(
     ledger["estimated"] = {
         "input_chars": len(instructions) + len(payload),
         "input_tokens": estimate_tokens_from_chars(len(instructions) + len(payload)),
-        "output_tokens": 30000,
+        "output_tokens": MAX_OUTPUT_TOKENS,
     }
     if cache_path.exists():
         ledger["cache_hits"] += 1
         return Course.model_validate_json(cache_path.read_text(encoding="utf-8"))
     ledger["cache_misses"] += 1
-    response = None
-    try:
-        response = client.responses.parse(
-            model=model,
-            instructions=instructions,
-            input=payload,
-            text_format=Course,
-            max_output_tokens=30000,
-        )
-    except Exception as exc:
-        add_attempt(ledger, unit=video_id, attempt=1, status="request_error", error=str(exc))
-        raise
-    course = response.output_parsed
-    if course is None:
-        add_attempt(
-            ledger,
-            unit=video_id,
-            attempt=1,
-            status="parse_error",
-            usage=getattr(response, "usage", None),
-            error="模型没有返回可解析的课程结构",
-        )
-        raise RuntimeError("模型没有返回可解析的课程结构")
-    # 来源字段由程序写入，避免模型改写视频身份。
-    course.video_id = context["video_id"]
-    course.source_url = context["source_url"]
-    course.source_title = context["source_title"]
-    course.channel = context["channel"]
-    course.duration_sec = context["duration_sec"]
-    try:
-        course = Course.model_validate(course.model_dump())
-    except ValueError as exc:
-        add_attempt(
-            ledger,
-            unit=video_id,
-            attempt=1,
-            status="validation_error",
-            usage=getattr(response, "usage", None),
-            error=str(exc),
-        )
-        raise
-    add_attempt(
-        ledger,
-        unit=video_id,
-        attempt=1,
-        status="success",
-        usage=getattr(response, "usage", None),
-    )
-    write_json_atomic(cache_path, course.model_dump())
-    return course
+    prompt = payload
+    last_error: Exception | None = None
+    for attempt in range(2):
+        response = None
+        try:
+            response = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": instructions},
+                    {"role": "user", "content": prompt},
+                ],
+                response_format={"type": "json_object"},
+                max_tokens=MAX_OUTPUT_TOKENS,
+                stream=False,
+                extra_body={"thinking": {"type": "disabled"}},
+            )
+            course = Course.model_validate_json(response.choices[0].message.content or "")
+            # 来源字段由程序写入，避免模型改写视频身份。
+            course.video_id = context["video_id"]
+            course.source_url = context["source_url"]
+            course.source_title = context["source_title"]
+            course.channel = context["channel"]
+            course.duration_sec = context["duration_sec"]
+            course = Course.model_validate(course.model_dump())
+            add_attempt(
+                ledger,
+                unit=video_id,
+                attempt=attempt + 1,
+                status="success",
+                usage=response.usage,
+            )
+            write_json_atomic(cache_path, course.model_dump())
+            return course
+        except (ValidationError, ValueError, json.JSONDecodeError) as exc:
+            last_error = exc
+            add_attempt(
+                ledger,
+                unit=video_id,
+                attempt=attempt + 1,
+                status="validation_error",
+                usage=getattr(response, "usage", None),
+                error=str(exc),
+            )
+            prompt = payload + f"\n\n上次输出没有通过校验：{exc}。请修正后重新输出完整 JSON。"
+        except Exception as exc:
+            add_attempt(
+                ledger,
+                unit=video_id,
+                attempt=attempt + 1,
+                status="request_error",
+                usage=getattr(response, "usage", None),
+                error=str(exc),
+            )
+            raise
+    raise RuntimeError(f"模型输出连续两次未通过课程校验：{last_error}")
 
 
 def generate_course(
@@ -291,15 +327,14 @@ def generate_course(
     ledger: dict | None = None,
     client=None,
 ) -> Course:
-    metadata, cues = fetch_source(url)
     if client is None:
-        try:
-            from openai import OpenAI
-        except ImportError as exc:
-            raise RuntimeError("缺少 openai SDK，请运行：pip install -r requirements.txt") from exc
-        if not os.getenv("OPENAI_API_KEY"):
-            raise RuntimeError("缺少 OPENAI_API_KEY；密钥只应设置在本地环境变量")
-        client = OpenAI()
+        if not os.getenv("ZHIPU_API_KEY"):
+            raise RuntimeError("缺少 ZHIPU_API_KEY；请只在本机 .env 中配置")
+        client = model_client(
+            os.environ["ZHIPU_API_KEY"],
+            os.getenv("ZHIPU_BASE_URL", DEFAULT_BASE_URL),
+        )
+    metadata, cues = fetch_source(url)
     active_ledger = ledger if ledger is not None else new_ledger("course", model, COURSE_PROMPT_VERSION)
     return generate_course_from_source(
         url,
@@ -334,7 +369,8 @@ def write_course(course: Course, output_root: Path) -> Path:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("url", nargs="?")
-    parser.add_argument("--model", default=os.getenv("OPENAI_MODEL", "gpt-5.4"))
+    parser.add_argument("--model")
+    parser.add_argument("--env-path", type=Path, default=DEFAULT_ENV)
     parser.add_argument("--fixture", type=Path, help="跳过下载和 API，验证已有课程 JSON")
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--history-root", type=Path, default=ROOT / "local-data" / "history")
@@ -346,10 +382,12 @@ def main() -> None:
     if args.fixture:
         course = Course.model_validate_json(args.fixture.read_text(encoding="utf-8"))
     elif args.url:
-        ledger = new_ledger("course", args.model, COURSE_PROMPT_VERSION)
+        load_env(args.env_path)
+        model = args.model or os.getenv("COURSE_MODEL", DEFAULT_MODEL)
+        ledger = new_ledger("course", model, COURSE_PROMPT_VERSION)
         usage_path = args.usage_root / f"{datetime.now().astimezone().strftime('%Y%m%d-%H%M%S-%f')}.json"
         try:
-            course = generate_course(args.url, args.model, cache_root=args.cache_root, ledger=ledger)
+            course = generate_course(args.url, model, cache_root=args.cache_root, ledger=ledger)
             finish_ledger(ledger, "success")
             write_json_atomic(usage_path, ledger)
         except Exception as exc:
